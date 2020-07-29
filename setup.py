@@ -1,7 +1,11 @@
+import os
 import subprocess
 from setuptools import setup
 
-__version__ = subprocess.run(['git', 'describe', '--tags', '--long'], stdout=subprocess.PIPE).stdout.decode('utf-8')[1:]
+
+cwd = os.path.dirname(os.path.realpath(__file__))
+
+__version__ = subprocess.run(['git', 'describe', '--tags', '--long'], stdout=subprocess.PIPE, cwd=cwd).stdout.decode('utf-8')[1:]
 
 setup(name='onnx-connx',
       version=__version__,
