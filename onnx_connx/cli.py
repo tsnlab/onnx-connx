@@ -3,10 +3,15 @@ import argparse
 import sys
 import os
 import onnx
+from onnx import numpy_helper
+from numpy import tofile
+
+is_output_comment = True
+encoding = 'little'
 
 def get_output_dir(path):
     if path == None:
-        path = 'connx'
+        path = 'out'
 
     try:
         if not os.path.exists(path):
@@ -41,58 +46,78 @@ class Path:
         self.input_paths = []
         self.calls = []
 
-    def dump(self):
-        print('path', self.id)
-        print('\tinput_paths', ' '.join(str(path.id) for path in self.input_paths))
-        print('\toutput_paths', ' '.join(str(path.id) for path in self.output_paths))
-        print('\n\t# inputs:', ' '.join(self.inputs))
+    def dump(self, output_dir, file):
+        file.write('path ' + str(self.id) + '\n')
+        file.write('\tinput_paths ' + ' '.join(str(path.id) for path in self.input_paths) + '\n')
+        file.write('\toutput_paths ' + ' '.join(str(path.id) for path in self.output_paths) + '\n')
+
+        global is_output_comment
+
+        if is_output_comment:
+            file.write('\n\t# inputs: ' + str(len(self.inputs)) + '\n')
 
         if len(self.inputs) > 0:
             for id, name in zip(self.calls[0].inputs, self.calls[0].proto.input):
-                print('\tinput', id, '#', name)
+                file.write('\tinput ' + str(id) + ' ')
 
-        print('\n\t# calls:', len(self.calls))
+                if is_output_comment:
+                    file.write('# ' + name)
+
+                file.write('\n')
+
+        if is_output_comment:
+            file.write('\n\t# calls: ' + str(len(self.calls)) + '\n')
 
         for i in range(len(self.calls)):
             call = self.calls[i]
 
-            print('\tcall', end=' ')
-            print(call.proto.op_type, end=' ')
-            print(len(call.outputs), end=' ')
-            print(len(call.inputs), end=' ')
-            print(len(call.attributes), end=' ')
+            file.write('\tcall ')
+            file.write(str(call.proto.op_type) + ' ')
+            file.write(str(len(call.outputs)) + ' ')
+            file.write(str(len(call.inputs)) + ' ')
+            file.write(str(len(call.attributes)) + ' ')
 
             for output in call.outputs:
-                print(output, end=' ')
+                file.write(str(output) + ' ')
 
             for input in call.inputs:
-                print(input, end=' ')
+                file.write(str(input) + ' ')
 
-            print('#', end=' ')
+            for attr in call.attribute:
+                if attr.
 
-            print(' '.join(call.proto.output), end=' ')
-            print(' '.join(call.proto.input), end=' ')
+            if is_output_comment:
+                file.write('# ')
 
-            print()
+                file.write(' '.join(call.proto.output) + ' ')
+                file.write(' '.join(call.proto.input) + ' ')
+
+            file.write('\n')
 
             # garbage collection
             for output in call.outputs:
                 if not self.is_use_after(output, i + 1):
-                    print('\tdelete', output)
+                    file.write('\tdelete ' + str(output) + '\n')
                     self.parent.deleted.append(output)
 
             for input in call.inputs:
                 if not self.is_use_after(input, i + 1):
-                    print('\tdelete', input)
+                    file.write('\tdelete ' + str(input) + '\n')
                     self.parent.deleted.append(input)
 
-        print('\n\t# outputs:', ' '.join(self.outputs))
+        if is_output_comment:
+            file.write('\n\t# outputs: ' + str(len(self.outputs)) + '\n')
 
         if len(self.outputs) > 0 and len(self.calls) > 0:
             for id, name in zip(self.calls[-1].outputs, self.calls[-1].proto.output):
-                print('\toutput', id, '#', name)
+                file.write('\toutput ' + str(id) + ' ')
 
-        print()
+                if is_output_comment:
+                    file.write('# ' + name)
+
+                file.write('\n')
+
+        file.write('\n')
 
 
     def is_use_after(self, id, idx):
@@ -120,6 +145,7 @@ class Graph:
         self.initializer_names = []
         self.paths = []
         self.deleted = []
+        self.proto = model
 
         # add initializers to values
         for initializer in model.initializer:
@@ -312,39 +338,163 @@ class Graph:
 
             return value
 
-    def dump(self, output_dir):
-        print('# initializers')
-        for name in self.initializer_names:
-            value = self.values[name]
-            print(value.type, end=' ')
-            print(value.id, end=' ')
-            print('#', value.name)
+    def dump(self, output_dir, file):
+        global is_output_comment
 
-        print('\n# variables')
-        for key, value in self.values.items():
-            if value.name in self.initializer_names:
-                continue
+        if is_output_comment:
+            file.write('# initializers\n')
 
-            print('variable', end=' ')
-            print(value.id, end=' ')
-            print('#', value.name)
+        if len(self.proto.initializer) > 0:
+            file.write('tensor 0 ' + str(len(self.proto.initializer) - 1))
 
-        print('\n# paths')
+            if is_output_comment:
+                file.write(' # ')
+
+                for initializer in self.proto.initializer:
+                    file.write(initializer.name + ' ')
+
+            file.write('\n')
+
+        if len(self.proto.sparse_initializer) > 0:
+            file.write('sparse_tensor ' + str(len(self.proto.initializer)) + ' ' + str(len(self.proto.initializer) + len(self.proto.sparse_initializer) - 1))
+
+            if is_output_comment:
+                file.write(' # ')
+
+                for initializer in self.proto.sparse_initializer:
+                    file.write(initializer.name + ' ')
+
+            file.write('\n')
+
+        for initializer in self.initializer_names:
+            value = self.values[initializer]
+            if value.type == 'tensor':
+                name = str(value.id) + '_tensor_' + str(value.proto.data_type)
+                for dim in value.proto.dims:
+                    name += '_' + str(dim)
+                name += '.np'
+
+                array = numpy_helper.to_array(value.proto)
+                array.tofile(output_dir + os.path.sep + name)
+            else:
+                raise Exception('value type ' + value.type + ' is not supported yet')
+
+        if is_output_comment:
+            file.write('\n# variables\n')
+
+        if len(self.values) > 0:
+            file.write('variable ' + str(len(self.initializer_names)) + ' ' + str(len(self.values) - 1))
+
+            if is_output_comment:
+                file.write(' # ')
+
+                for key, value in self.values.items():
+                    if value.name in self.initializer_names:
+                        continue
+
+                    file.write(value.name + ' ')
+
+            file.write('\n')
+
+        file.write('\n')
+
+        if is_output_comment:
+            file.write('\n# paths\n')
+
         for path in self.paths:
-            path.dump()
+            path.dump(output_dir, file)
 
-        print('\n# clean up')
+        if is_output_comment:
+            file.write('\n# run\n')
+
+        file.write('start ')
+        for path in self.paths:
+            if len(path.input_paths) == 0:
+                file.write(str(path.id) + ' ')
+
+        file.write('\n')
+
+        file.write('stop ')
+        for path in self.paths:
+            if len(path.output_paths) == 0:
+                file.write(str(path.id) + ' ')
+
+        file.write('\n')
+
         for key, value in self.values.items():
             if not value.id in self.deleted:
-                print('clean', value.id)
+                file.write('clean ' + str(value.id) + '\n')
+
+class Model():
+    def __init__(self, model):
+        self.proto = model
+        self.graph = Graph(self, model.graph)
+        self.attributes = []
+
+    def dump(self, output_dir):
+        global is_output_comment
+
+        file = open(output_dir + os.path.sep + 'main.cos', 'w')
+
+        if is_output_comment:
+            file.write('# metadata\n')
+
+        file.write('opset ')
+        for opset in self.proto.opset_import:
+            file.write(str(opset.version) + ' ')
+
+        file.write('\n\n')
+
+        self.graph.dump(output_dir, file)
+
+        file.close()
+
+    def dump_attributes(self, output_dir):
+        with open(output_dir + os.path.sep + 'attr.np', 'wb') as file:
+            # write index
+
+            # write data
+            for attr in self.attributes:
+                if attr.type == 1:  # FLOAT = 1
+                    text += attr.f
+                elif attr.type == 2: # INT = 2
+                    text += attr.i
+                elif attr.type == 3: # STRING = 3
+                    text += attr.s
+                elif attr.type == 4: # TENSOR = 4
+                elif attr.type == 5: # GRAPH = 5
+                elif attr.type == 11: # SPARSE_TENSOR = 11
+                elif attr.type == 6: # FLOATS = 6
+                    text += str(len(attr.floats)) + ' '
+                    for value in attr.floats:
+                elif attr.type == 7: # INTS = 7
+                elif attr.type == 8: # STRINGS = 8
+                elif attr.type == 9: # TENSORS = 9
+                elif attr.type == 10: # GRAPHS = 10
+                elif attr.type == 12: # SPARSE_TENSORS = 12
+                else:
+                    raise Exception('Illegal attribute type: ' + str(attr.type))
+
+    def encode_attr(self, attr):
+        text = str(attr.type) + ' '
+        id = len(self.attrributes)
+        self.attributes.append(attr)
+        text += str(id)
+
+        return text
 
 def main():
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
     parser.add_argument('onnx', metavar='onnx', type=argparse.FileType('rb'), nargs=1, help='an input ONNX model')
     parser.add_argument('-o', metavar='connx', type=str, nargs='?', help='an output CONNX model directory')
+    parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'], help='output comments(true or false)')
 
     # parse args
     args = parser.parse_args()
+
+    # comment option
+    global is_output_comment
+    is_output_comment = args.c == None or args.c == 'true' or args.c == 'True'
 
     # mkdir output_dir
     output_dir = get_output_dir(args.o)
@@ -352,15 +502,16 @@ def main():
         return
 
     # parse onnx file
-    model = None
+    onnx_model = None
     try:
-        model = onnx.load_model(args.onnx[0])
+        onnx_model = onnx.load_model(args.onnx[0])
     except:
         print('Illegal ONNX file format:', args.onnx[0].name)
         return
 
-    graph = Graph(None, model.graph)
-    graph.dump(output_dir)
+    
+    model = Model(onnx_model)
+    model.dump(output_dir)
 
 if __name__ == '__main__':
     main()
