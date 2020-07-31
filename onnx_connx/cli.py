@@ -4,7 +4,7 @@ import sys
 import os
 import onnx
 from onnx import numpy_helper
-from numpy import tofile
+import numpy as np
 
 is_output_comment = True
 encoding = 'little'
@@ -21,6 +21,104 @@ def get_output_dir(path):
         return None
 
     return path
+
+def normalize_attributes(op, attrs):
+    def attr_int(name, value):
+        attr = onnx.AttributeProto()
+        attr.name = name
+        attr.type = onnx.AttributeProto.INT
+        attr.i = value
+
+        return attr
+
+    def attr_float(name, value):
+        attr = onnx.AttributeProto()
+        attr.name = name
+        attr.type = onnx.AttributeProto.FLOAT
+        attr.f = value
+
+        return attr
+
+    def attr_string(name, value):
+        attr = onnx.AttributeProto()
+        attr.name = name
+        attr.type = onnx.AttributeProto.STRING
+        attr.s = value
+
+        return attr
+
+    def attr_ints(name, value):
+        attr = onnx.AttributeProto()
+        attr.name = name
+        attr.type = onnx.AttributeProto.INTS
+
+        if type(value) is int:
+            for i in range(len(value)):
+                attr.ints.append(0)
+        else:
+            for v in value:
+                attr.ints.append(v)
+
+        return attr
+
+    def attr_floats(name, value):
+        attr = onnx.AttributeProto()
+        attr.name = name
+        attr.type = onnx.AttributeProto.FLOATS
+
+        if type(value) is int:
+            for i in range(len(value)):
+                attr.floats.append(0.0)
+        else:
+            for v in value:
+                attr.floats.append(v)
+
+        return attr
+
+    def attr_strings(name, value):
+        attr = onnx.AttributeProto()
+        attr.name = name
+        attr.type = onnx.AttributeProto.STRINGS
+
+        if type(value) is int:
+            for i in range(len(value)):
+                attr.strings.append('')
+        else:
+            for v in value:
+                attr.strings.append(v)
+
+        return attr
+
+    def get_attr(name):
+        for attr in attrs:
+            if attr.name == name:
+                return attr
+
+        return None
+
+    result = []
+
+    if op == 'Conv':
+        kernel_shape = get_attr('kernel_shape')
+
+        result.append(get_attr('auto_pad') or attr_string('auto_pad', 'NOTSET'))
+        result.append(get_attr('dilations') or attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
+        result.append(get_attr('group') or attr_int('group', 1))
+        result.append(kernel_shape)
+        result.append(get_attr('pads') or attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+        result.append(get_attr('strides') or attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+    elif op == 'MaxPool':
+        kernel_shape = get_attr('kernel_shape')
+
+        result.append(get_attr('auto_pad') or attr_string('auto_pad', 'NOTSET'))
+        result.append(get_attr('ceil_mode') or attr_int('ceil_mode', 0))
+        result.append(get_attr('dilations') or attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
+        result.append(kernel_shape)
+        result.append(get_attr('pads') or attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+        result.append(get_attr('storage_order') or attr_int('storage_order', 0))
+        result.append(get_attr('strides') or attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+
+    return result
 
 class Value:
     def __init__(self):
@@ -71,11 +169,13 @@ class Path:
         for i in range(len(self.calls)):
             call = self.calls[i]
 
+            attrs = normalize_attributes(call.proto.op_type, call.proto.attribute)
+
             file.write('\tcall ')
             file.write(str(call.proto.op_type) + ' ')
             file.write(str(len(call.outputs)) + ' ')
             file.write(str(len(call.inputs)) + ' ')
-            file.write(str(len(call.attributes)) + ' ')
+            file.write(str(len(attrs)) + ' ')
 
             for output in call.outputs:
                 file.write(str(output) + ' ')
@@ -83,14 +183,17 @@ class Path:
             for input in call.inputs:
                 file.write(str(input) + ' ')
 
-            for attr in call.attribute:
-                if attr.
+            for attr in attrs:
+                file.write(str(self.parent.parent.alloc_attribute(attr)) + ' ')
 
             if is_output_comment:
                 file.write('# ')
 
                 file.write(' '.join(call.proto.output) + ' ')
                 file.write(' '.join(call.proto.input) + ' ')
+
+                for attr in attrs:
+                    file.write(attr.name + '=' + self.comment_attribute(attr) + ' ')
 
             file.write('\n')
 
@@ -119,6 +222,55 @@ class Path:
 
         file.write('\n')
 
+    def comment_attribute(self, attr):
+        comment = ''
+
+        if attr.type == onnx.AttributeProto.FLOAT:
+            comment += str(attr.f)
+        elif attr.type == onnx.AttributeProto.INT:
+            comment += str(attr.i)
+        elif attr.type == onnx.AttributeProto.STRING:
+            comment += '"' + attr.s.decode('utf-8') + '"'
+        elif attr.type == onnx.AttributeProto.TENSOR:
+            comment += '<tensor>'
+        elif attr.type == onnx.AttributeProto.GRAPH:
+            comment += '<graph>'
+        elif attr.type == onnx.AttributeProto.SPARSE_TENSOR:
+            comment += '<sparse_tensor>'
+        elif attr.type == onnx.AttributeProto.FLOATS:
+            comment += '['
+            length = len(attr.floats)
+            for i in range(length):
+                comment += str(attr.floats[i])
+                if i + 1 < length:
+                    comment += ','
+            comment += ']'
+        elif attr.type == onnx.AttributeProto.INTS:
+            comment += '['
+            length = len(attr.ints)
+            for i in range(length):
+                comment += str(attr.ints[i])
+                if i + 1 < length:
+                    comment += ','
+            comment += ']'
+        elif attr.type == onnx.AttributeProto.STRINGS:
+            comment += '['
+            length = len(attr.strings)
+            for i in range(length):
+                comment += '"' + attr.strings[i].decode('utf-8') + '"'
+                if i + 1 < length:
+                    comment += ','
+            comment += ']'
+        elif attr.type == onnx.AttributeProto.TENSORS:
+            comment += '<tensors>'
+        elif attr.type == onnx.AttributeProto.GRAPHS:
+            comment += '<graphs>'
+        elif attr.type == onnx.AttributeProto.SPARSE_TENSORS:
+            comment += '<sparse_tensors>'
+        else:
+            raise Exception('Illegal attribute type: ' + str(attr.type))
+
+        return comment
 
     def is_use_after(self, id, idx):
         for i in range(idx, len(self.calls)):
@@ -449,31 +601,170 @@ class Model():
 
         file.close()
 
-    def dump_attributes(self, output_dir):
-        with open(output_dir + os.path.sep + 'attr.np', 'wb') as file:
-            # write index
+        self.dump_attributes(output_dir)
 
-            # write data
+    def has_attribute(self, attr):
+        for i in range(len(self.attributes)):
+            attr2 = self.attributes[i]
+
+            if attr.type != attr2.type:
+                continue
+
+            if attr.type == onnx.AttributeProto.FLOAT:
+                if attr.f == attr2.f:
+                    return i
+            elif attr.type == onnx.AttributeProto.INT:
+                if attr.i == attr2.i:
+                    return i
+            elif attr.type == onnx.AttributeProto.STRING:
+                if attr.s == attr2.s:
+                    return i
+            elif attr.type == onnx.AttributeProto.TENSOR:
+                array = numpy_helper.to_array(attr.t)
+                array2 = numpy_helper.to_array(attr2.t)
+
+                if attr == attr2:
+                    return i
+            elif attr.type == onnx.AttributeProto.GRAPH:
+                break
+            elif attr.type == onnx.AttributeProto.SPARSE_TENSOR:
+                raise Exception('sparse_tensor type is not supported yet')
+            elif attr.type == onnx.AttributeProto.FLOATS:
+                if attr.floats == attr2.floats:
+                    return i
+            elif attr.type == onnx.AttributeProto.INTS:
+                if attr.ints == attr2.ints:
+                    return i
+            elif attr.type == onnx.AttributeProto.STRINGS:
+                if attr.strings == attr2.strings:
+                    return i
+            elif attr.type == onnx.AttributeProto.TENSORS:
+                length = len(attr.tensors)
+                if length != len(attr2.tensors):
+                    continue
+
+                for j in range(length):
+                    array = numpy_helper.to_array(attr.tensors[j])
+                    array2 = numpy_helper.to_array(attr2.tensors[j])
+
+                    if attr != attr2:
+                        continue
+
+                return i
+            elif attr.type == onnx.AttributeProto.GRAPHS:
+                break
+            elif attr.type == onnx.AttributeProto.SPARSE_TENSORS:
+                raise Exception('sparse_tensors type is not supported yet')
+            else:
+                raise Exception('Illegal attribute type: ' + str(attr.type))
+
+        return -1
+
+    def alloc_attribute(self, attr):
+        id = self.has_attribute(attr)
+        if id >= 0:
+            return id
+
+        id = len(self.attributes)
+        self.attributes.append(attr)
+        return id
+
+    def dump_attributes(self, output_dir):
+        index = []
+
+        # write data
+        with open(output_dir + os.path.sep + 'attr.db', 'wb') as file:
+            align = 4
+            offset = 0
+
+            def write(buf):
+                nonlocal offset
+                nonlocal file
+
+                offset += file.write(buf)
+
+                pad = (align - (offset % align)) % align
+                if pad > 0:
+                    offset += file.write(np.zeros(pad, np.uint8).tobytes())
+
             for attr in self.attributes:
-                if attr.type == 1:  # FLOAT = 1
-                    text += attr.f
-                elif attr.type == 2: # INT = 2
-                    text += attr.i
-                elif attr.type == 3: # STRING = 3
-                    text += attr.s
-                elif attr.type == 4: # TENSOR = 4
-                elif attr.type == 5: # GRAPH = 5
-                elif attr.type == 11: # SPARSE_TENSOR = 11
-                elif attr.type == 6: # FLOATS = 6
-                    text += str(len(attr.floats)) + ' '
-                    for value in attr.floats:
-                elif attr.type == 7: # INTS = 7
-                elif attr.type == 8: # STRINGS = 8
-                elif attr.type == 9: # TENSORS = 9
-                elif attr.type == 10: # GRAPHS = 10
-                elif attr.type == 12: # SPARSE_TENSORS = 12
+                
+                if attr.type == onnx.AttributeProto.FLOAT:
+                    index.append(offset)
+                    write(np.array([ attr.f ], np.float32).tobytes())
+                elif attr.type == onnx.AttributeProto.INT:
+                    index.append(offset)
+                    write(np.array([ attr.i ], np.int32).tobytes())
+                elif attr.type == onnx.AttributeProto.STRING:
+                    index.append(offset)
+
+                    # write length
+                    length = len(attr.s)
+                    write(np.array([ length ], np.uint32).tobytes())
+
+                    # write string
+                    write(attr.s)
+                elif attr.type == onnx.AttributeProto.TENSOR:
+                    index.append(offset)
+
+                    # write type
+                    write(np.array([ attr.t.type ], np.uint32).tobytes())
+
+                    # write dimension
+                    dimension = len(attr.t.dims)
+                    write(np.array([ dimension ], np.uint32).tobytes())
+
+                    # write lengths
+                    for i in range(dimension):
+                        write(np.array([ attr.t.dims[i] ], np.uint32).tobytes())
+
+                    # write array
+                    array = numpy_helper.to_array(attr.t)
+                    write(array)
+                elif attr.type == onnx.AttributeProto.GRAPH:
+                    raise Exception('graph writing is not supported yet')
+                elif attr.type == onnx.AttributeProto.SPARSE_TENSOR:
+                    raise Exception('sparse_tensor writing is not supported yet')
+                elif attr.type == onnx.AttributeProto.FLOATS:
+                    index.append(offset)
+
+                    # write length
+                    write(np.array([ len(attr.floats) ], np.uint32).tobytes())
+
+                    # write array
+                    write(np.array(attr.floats, np.float32).tobytes())
+                elif attr.type == onnx.AttributeProto.INTS:
+                    index.append(offset)
+
+                    # write length
+                    write(np.array([ len(attr.ints) ], np.uint32).tobytes())
+
+                    # write array
+                    write(np.array(attr.ints, np.int32).tobytes())
+                elif attr.type == onnx.AttributeProto.STRINGS:
+                    index.append(offset)
+
+                    # write length
+                    write(np.array([ len(attr.strings) ], np.uint32).tobytes())
+
+                    for s in attr.strings:
+                        # write length
+                        length = len(s)
+                        write(np.array([ length ], np.uint32).tobytes())
+
+                        # write string
+                        write(s)
+                elif attr.type == onnx.AttributeProto.TENSORS:
+                    raise Exception('tensors writing is not supported yet')
+                elif attr.type == onnx.AttributeProto.GRAPHS:
+                    raise Exception('graph writing is not supported yet')
+                elif attr.type == onnx.AttributeProto.SPARSE_TENSORS:
+                    raise Exception('sparse_tensors writing is not supported yet')
                 else:
                     raise Exception('Illegal attribute type: ' + str(attr.type))
+
+        # write index
+        np.array(index, np.uint32).tofile(output_dir + os.path.sep + 'attr.idx')
 
     def encode_attr(self, attr):
         text = str(attr.type) + ' '
