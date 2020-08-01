@@ -22,6 +22,25 @@ def get_output_dir(path):
 
     return path
 
+def encode_tensor(tensor):
+    buf = bytearray()
+
+    # write type
+    buf += np.array([ tensor.data_type ], np.uint32).tobytes()
+
+    # write dimension
+    dimension = len(tensor.dims)
+    buf += np.array([ dimension ], np.uint32).tobytes()
+
+    # write lengths
+    for i in range(dimension):
+        buf += np.array([ tensor.dims[i] ], np.uint32).tobytes()
+
+    # write array
+    buf += numpy_helper.to_array(tensor).tobytes()
+
+    return buf
+
 def normalize_attributes(op, attrs):
     def attr_int(name, value):
         attr = onnx.AttributeProto()
@@ -151,20 +170,19 @@ class Path:
 
         global is_output_comment
 
-        if is_output_comment:
-            file.write('\n\t# inputs: ' + str(len(self.inputs)) + '\n')
+        # inputs
+        file.write('\n\tinputs ')
 
-        if len(self.inputs) > 0:
-            for id, name in zip(self.calls[0].inputs, self.calls[0].proto.input):
-                file.write('\tinput ' + str(id) + ' ')
-
-                if is_output_comment:
-                    file.write('# ' + name)
-
-                file.write('\n')
+        for input in self.inputs:
+            file.write(str(self.parent.values[input].id) + ' ')
 
         if is_output_comment:
-            file.write('\n\t# calls: ' + str(len(self.calls)) + '\n')
+            file.write('# ' + ' '.join(self.inputs))
+
+        file.write('\n')
+
+        # calls
+        file.write('\n\tcalls ' + str(len(self.calls)) + '\n')
 
         for i in range(len(self.calls)):
             call = self.calls[i]
@@ -198,29 +216,29 @@ class Path:
             file.write('\n')
 
             # garbage collection
+            deletes = []
             for output in call.outputs:
                 if not self.is_use_after(output, i + 1):
-                    file.write('\tdelete ' + str(output) + '\n')
+                    deletes.append(str(output))
                     self.parent.deleted.append(output)
 
             for input in call.inputs:
                 if not self.is_use_after(input, i + 1):
-                    file.write('\tdelete ' + str(input) + '\n')
+                    deletes.append(str(input))
                     self.parent.deleted.append(input)
 
+            file.write('\tdelete ' + ' '.join(deletes) + '\n')
+
+        # outputs
+        file.write('\n\toutputs ')
+
+        for output in self.outputs:
+            file.write(str(self.parent.values[output].id) + ' ')
+
         if is_output_comment:
-            file.write('\n\t# outputs: ' + str(len(self.outputs)) + '\n')
+            file.write('# ' + ' '.join(self.outputs))
 
-        if len(self.outputs) > 0 and len(self.calls) > 0:
-            for id, name in zip(self.calls[-1].outputs, self.calls[-1].proto.output):
-                file.write('\toutput ' + str(id) + ' ')
-
-                if is_output_comment:
-                    file.write('# ' + name)
-
-                file.write('\n')
-
-        file.write('\n')
+        file.write('\n\n')
 
     def comment_attribute(self, attr):
         comment = ''
@@ -230,7 +248,7 @@ class Path:
         elif attr.type == onnx.AttributeProto.INT:
             comment += str(attr.i)
         elif attr.type == onnx.AttributeProto.STRING:
-            comment += '"' + attr.s.decode('utf-8') + '"'
+            comment += '"' + attr.s.decode() + '"'
         elif attr.type == onnx.AttributeProto.TENSOR:
             comment += '<tensor>'
         elif attr.type == onnx.AttributeProto.GRAPH:
@@ -257,7 +275,7 @@ class Path:
             comment += '['
             length = len(attr.strings)
             for i in range(length):
-                comment += '"' + attr.strings[i].decode('utf-8') + '"'
+                comment += '"' + attr.strings[i].decode() + '"'
                 if i + 1 < length:
                     comment += ','
             comment += ']'
@@ -493,49 +511,41 @@ class Graph:
     def dump(self, output_dir, file):
         global is_output_comment
 
+        file.write('initializers ' + str(len(self.proto.initializer) + len(self.proto.sparse_initializer)))
         if is_output_comment:
-            file.write('# initializers\n')
+            file.write(' # ')
 
-        if len(self.proto.initializer) > 0:
-            file.write('tensor 0 ' + str(len(self.proto.initializer) - 1))
+            for initializer in self.proto.initializer:
+                file.write(initializer.name + ' ')
 
-            if is_output_comment:
-                file.write(' # ')
+            for initializer in self.proto.sparse_initializer:
+                file.write(initializer.name + ' ')
 
-                for initializer in self.proto.initializer:
-                    file.write(initializer.name + ' ')
+        file.write('\n')
 
-            file.write('\n')
+        # write initializer.db
+        index = [ 0 ]
+        with open(output_dir + os.path.sep + 'init.db', 'wb') as fp:
+            for initializer in self.initializer_names:
+                value = self.values[initializer]
+                if value.type == 'tensor':
+                    length = fp.write(encode_tensor(value.proto))
+                    index.append(index[-1] + length)
+                else:
+                    raise Exception('value type ' + value.type + ' is not supported yet')
 
-        if len(self.proto.sparse_initializer) > 0:
-            file.write('sparse_tensor ' + str(len(self.proto.initializer)) + ' ' + str(len(self.proto.initializer) + len(self.proto.sparse_initializer) - 1))
+        del index[-1]
 
-            if is_output_comment:
-                file.write(' # ')
+        # write initializer.idx
+        with open(output_dir + os.path.sep + 'init.idx', 'wb') as fp:
+            for offset in index:
+                fp.write(np.array([ offset ], np.uint32).tobytes())
 
-                for initializer in self.proto.sparse_initializer:
-                    file.write(initializer.name + ' ')
+        del index
 
-            file.write('\n')
-
-        for initializer in self.initializer_names:
-            value = self.values[initializer]
-            if value.type == 'tensor':
-                name = str(value.id) + '_tensor_' + str(value.proto.data_type)
-                for dim in value.proto.dims:
-                    name += '_' + str(dim)
-                name += '.np'
-
-                array = numpy_helper.to_array(value.proto)
-                array.tofile(output_dir + os.path.sep + name)
-            else:
-                raise Exception('value type ' + value.type + ' is not supported yet')
-
-        if is_output_comment:
-            file.write('\n# variables\n')
-
+        # variables
         if len(self.values) > 0:
-            file.write('variable ' + str(len(self.initializer_names)) + ' ' + str(len(self.values) - 1))
+            file.write('variables ' + str(len(self.values) - len(self.initializer_names)))
 
             if is_output_comment:
                 file.write(' # ')
@@ -551,13 +561,13 @@ class Graph:
         file.write('\n')
 
         if is_output_comment:
-            file.write('\n# paths\n')
+            file.write('# paths\n')
 
         for path in self.paths:
             path.dump(output_dir, file)
 
         if is_output_comment:
-            file.write('\n# run\n')
+            file.write('# run\n')
 
         file.write('start ')
         for path in self.paths:
@@ -586,16 +596,22 @@ class Model():
     def dump(self, output_dir):
         global is_output_comment
 
-        file = open(output_dir + os.path.sep + 'main.cos', 'w')
+        file = open(output_dir + os.path.sep + 'main.cnx', 'w')
 
         if is_output_comment:
             file.write('# metadata\n')
 
         file.write('opset ')
+        opset_ver = -1
         for opset in self.proto.opset_import:
-            file.write(str(opset.version) + ' ')
+            if opset.version > opset_ver:
+                opset_ver = opset.version
+        file.write(str(opset_ver) + ' ')
+        file.write('\n')
 
-        file.write('\n\n')
+        file.write('paths ')
+        file.write(str(len(self.graph.paths)))
+        file.write('\n')
 
         self.graph.dump(output_dir, file)
 
@@ -698,29 +714,15 @@ class Model():
                 elif attr.type == onnx.AttributeProto.STRING:
                     index.append(offset)
 
-                    # write length
-                    length = len(attr.s)
-                    write(np.array([ length ], np.uint32).tobytes())
-
                     # write string
-                    write(attr.s)
+                    buf = bytearray(attr.s)
+                    buf.append(0)
+                    write(buf)
                 elif attr.type == onnx.AttributeProto.TENSOR:
                     index.append(offset)
 
-                    # write type
-                    write(np.array([ attr.t.type ], np.uint32).tobytes())
-
-                    # write dimension
-                    dimension = len(attr.t.dims)
-                    write(np.array([ dimension ], np.uint32).tobytes())
-
-                    # write lengths
-                    for i in range(dimension):
-                        write(np.array([ attr.t.dims[i] ], np.uint32).tobytes())
-
-                    # write array
-                    array = numpy_helper.to_array(attr.t)
-                    write(array)
+                    buf = encode_tensor(attr.t)
+                    write(buf)
                 elif attr.type == onnx.AttributeProto.GRAPH:
                     raise Exception('graph writing is not supported yet')
                 elif attr.type == onnx.AttributeProto.SPARSE_TENSOR:
@@ -747,13 +749,27 @@ class Model():
                     # write length
                     write(np.array([ len(attr.strings) ], np.uint32).tobytes())
 
+                    sub_offset = 4 + len(attr.string) * 4
+                    sub_offsets = []
+                    sub_buf = []
+
                     for s in attr.strings:
                         # write length
-                        length = len(s)
-                        write(np.array([ length ], np.uint32).tobytes())
+                        buf = bytearray(s)
+                        buf.append(0)
 
-                        # write string
-                        write(s)
+                        sub_offsets.append(sub_offset)
+                        sub_buf.append(buf)
+                        sub_offset += len(buf)
+                        sub_offset += (align - (sub_offset % align)) % align
+
+                    # write index
+                    for off in sub_offsets:
+                        write(np.array([ off ], np.uint32).tobytes())
+
+                    # write strings
+                    for buf in sub_buf:
+                        write(buf)
                 elif attr.type == onnx.AttributeProto.TENSORS:
                     raise Exception('tensors writing is not supported yet')
                 elif attr.type == onnx.AttributeProto.GRAPHS:
