@@ -317,7 +317,17 @@ class Graph:
         self.deleted = []
         self.proto = model
 
-        # add initializers to values
+        # add null to values
+        value = Value()
+        value.type = 'null'
+        value.name = 'null'
+        value.id = 0
+        value.proto = None
+
+        self.values[value.name] = value
+        self.initializer_names.append(value.name)
+
+        # add tensor initializers to values 
         for initializer in model.initializer:
             value = Value()
             value.type = 'tensor'
@@ -328,6 +338,7 @@ class Graph:
             self.values[value.name] = value
             self.initializer_names.append(value.name)
 
+        # add sparse_tensor initializers to values 
         for sparse_initializer in model.sparse_initializer:
             value = Value()
             value.type = 'sparse_tensor'
@@ -528,7 +539,10 @@ class Graph:
         with open(output_dir + os.path.sep + 'init.db', 'wb') as fp:
             for initializer in self.initializer_names:
                 value = self.values[initializer]
-                if value.type == 'tensor':
+                if value.type == 'null':
+                    length = fp.write(np.array([ 0 ], np.uint32).tobytes())
+                    index.append(index[-1] + length)
+                elif value.type == 'tensor':
                     length = fp.write(encode_tensor(value.proto))
                     index.append(index[-1] + length)
                 else:
@@ -573,25 +587,32 @@ class Graph:
         for path in self.paths:
             if len(path.input_paths) == 0:
                 file.write(str(path.id) + ' ')
-
         file.write('\n')
 
         file.write('stop ')
         for path in self.paths:
             if len(path.output_paths) == 0:
                 file.write(str(path.id) + ' ')
-
         file.write('\n')
 
+        file.write('clean ')
         for key, value in self.values.items():
             if not value.id in self.deleted:
-                file.write('clean ' + str(value.id) + '\n')
+                file.write(str(value.id) + ' ')
+        file.write('\n')
+
+        file.write('\0')
 
 class Model():
     def __init__(self, model):
         self.proto = model
         self.graph = Graph(self, model.graph)
         self.attributes = []
+
+        null_attr = onnx.AttributeProto()
+        null_attr.name = 'null'
+        null_attr.type = onnx.AttributeProto.UNDEFINED
+        self.attributes.append(null_attr)
 
     def dump(self, output_dir):
         global is_output_comment
@@ -705,7 +726,10 @@ class Model():
 
             for attr in self.attributes:
                 
-                if attr.type == onnx.AttributeProto.FLOAT:
+                if attr.type == onnx.AttributeProto.UNDEFINED:
+                    index.append(offset)
+                    write(np.array([ 0 ], np.uint32).tobytes())
+                elif attr.type == onnx.AttributeProto.FLOAT:
                     index.append(offset)
                     write(np.array([ attr.f ], np.float32).tobytes())
                 elif attr.type == onnx.AttributeProto.INT:
@@ -792,8 +816,8 @@ class Model():
 
 def main():
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
-    parser.add_argument('onnx', metavar='onnx', type=argparse.FileType('rb'), nargs=1, help='an input ONNX model')
-    parser.add_argument('-o', metavar='connx', type=str, nargs='?', help='an output CONNX model directory')
+    parser.add_argument('onnx', metavar='onnx or pb', type=argparse.FileType('rb'), nargs='+', help='an input ONNX model')
+    parser.add_argument('-o', metavar='output', type=str, nargs='?', help='output directory(default is out)')
     parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'], help='output comments(true or false)')
 
     # parse args
@@ -808,17 +832,34 @@ def main():
     if output_dir == None:
         return
 
-    # parse onnx file
-    onnx_model = None
-    try:
-        onnx_model = onnx.load_model(args.onnx[0])
-    except:
-        print('Illegal ONNX file format:', args.onnx[0].name)
-        return
+    for file in args.onnx:
+        # parse onnx file
+        if file.name.endswith('.onnx'):
+            onnx_model = None
+            try:
+                onnx_model = onnx.load_model(file)
+            except:
+                print('Illegal ONNX file format:', file.name)
+                return
+            
+            model = Model(onnx_model)
+            model.dump(output_dir)
+        # parse pb file
+        elif file.name.endswith('.pb'):
+            tensor_model = None
+            try:
+                tensor_model = onnx.load_tensor(file)
+            except:
+                print('Illegal protocol buffer format:', file.name)
+                return
 
-    
-    model = Model(onnx_model)
-    model.dump(output_dir)
+            buf = encode_tensor(tensor_model)
+            basename = os.path.basename(file.name)
+            with open(output_dir + os.path.sep + basename[:-3] + '.tensor', 'wb') as fp:
+                fp.write(buf)
+        else:
+            print('Not supported file format:', file.name)
+            return
 
 if __name__ == '__main__':
     main()
