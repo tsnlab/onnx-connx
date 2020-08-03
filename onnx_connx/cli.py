@@ -120,20 +120,36 @@ def normalize_attributes(op, attrs):
     if op == 'Conv':
         kernel_shape = get_attr('kernel_shape')
 
-        result.append(get_attr('auto_pad') or attr_string('auto_pad', 'NOTSET'))
+        auto_pad = get_attr('auto_pad') or attr_string('auto_pad', 'NOTSET')
+        result.append(auto_pad)
+
         result.append(get_attr('dilations') or attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
         result.append(get_attr('group') or attr_int('group', 1))
         result.append(kernel_shape)
-        result.append(get_attr('pads') or attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+
+        pads = get_attr('pads') or attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32))
+        result.append(pads)
+        if auto_pad.s == 'VALID':
+            for i in range(len(kernel_shape.ints) * 2):
+                auto_pad.ints[i] = 0
+
         result.append(get_attr('strides') or attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
     elif op == 'MaxPool':
         kernel_shape = get_attr('kernel_shape')
 
-        result.append(get_attr('auto_pad') or attr_string('auto_pad', 'NOTSET'))
+        auto_pad = get_attr('auto_pad') or attr_string('auto_pad', 'NOTSET')
+        result.append(auto_pad)
+
         result.append(get_attr('ceil_mode') or attr_int('ceil_mode', 0))
         result.append(get_attr('dilations') or attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
         result.append(kernel_shape)
-        result.append(get_attr('pads') or attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+
+        pads = get_attr('pads') or attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32))
+        result.append(pads)
+        if auto_pad.s == 'VALID':
+            for i in range(len(kernel_shape.ints) * 2):
+                auto_pad.ints[i] = 0
+
         result.append(get_attr('storage_order') or attr_int('storage_order', 0))
         result.append(get_attr('strides') or attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
 
@@ -291,6 +307,13 @@ class Path:
         return comment
 
     def is_use_after(self, id, idx):
+        if id == 0:
+            return True
+
+        # check model's inputs and outputs
+        if id in self.parent.inputs or id in self.parent.outputs:
+            return True
+
         for i in range(idx, len(self.calls)):
             call = self.calls[i]
 
@@ -383,6 +406,9 @@ class Graph:
 
         # set graph's inputs and outputs
         for input in model.input:
+            if input.name in self.initializer_names:
+                continue
+
             value = self.get_value(input.name)
             self.inputs.append(value.id)
 
@@ -522,9 +548,11 @@ class Graph:
     def dump(self, output_dir, file):
         global is_output_comment
 
-        file.write('initializers ' + str(len(self.proto.initializer) + len(self.proto.sparse_initializer)))
+        file.write('initializers ' + str(1 + len(self.proto.initializer) + len(self.proto.sparse_initializer)))
         if is_output_comment:
             file.write(' # ')
+
+            file.write('null ')
 
             for initializer in self.proto.initializer:
                 file.write(initializer.name + ' ')
@@ -598,7 +626,11 @@ class Graph:
         file.write('clean ')
         for key, value in self.values.items():
             if not value.id in self.deleted:
+                if value.id == 0:
+                    continue
+
                 file.write(str(value.id) + ' ')
+
         file.write('\n')
 
         file.write('\0')
