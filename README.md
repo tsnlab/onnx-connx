@@ -1,7 +1,20 @@
 # ONNX to CONNX Converter
 onnx-connx is an converting tool which changes ONNX model to CONNX model
 
-# Install
+# Developers
+## Prepare development environments
+ * sudo apt install python3 python3-pip python3-venv
+ * python3 -m pip install --user virtualenv
+ * python3 -m venv venv
+ * source venv/bin/activate
+ * pip install --upgrade pip
+ * pip install onnx
+
+# Execute cli
+python onnx\_connx/cli.py
+
+# Users
+## Install onnx-connx via pip
 pip install git+https://github.com/semihlab/onnx-connx
 
 # License
