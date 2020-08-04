@@ -69,7 +69,7 @@ def normalize_attributes(op, attrs):
         attr = onnx.AttributeProto()
         attr.name = name
         attr.type = onnx.AttributeProto.STRING
-        attr.s = value
+        attr.s = value.encode()
 
         return attr
 
@@ -108,10 +108,10 @@ def normalize_attributes(op, attrs):
 
         if type(value) is int:
             for i in range(len(value)):
-                attr.strings.append('')
+                attr.strings.append(''.encode())
         else:
             for v in value:
-                attr.strings.append(v)
+                attr.strings.append(v.encode())
 
         return attr
 
@@ -159,6 +159,9 @@ def normalize_attributes(op, attrs):
 
         result.append(get_attr('storage_order') or attr_int('storage_order', 0))
         result.append(get_attr('strides') or attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+    elif op == 'BatchNormalization':
+        result.append(get_attr('epsilon') or attr_int('epsilon', 0.00001))
+        result.append(get_attr('momentum') or attr_int('momentum', 0.9))
 
     return result
 
@@ -459,7 +462,7 @@ class Graph:
                         dep_calls.append(call)
                         found.append(input)
 
-            for p in itertools.chain(resolved, unresolved):
+            for p in itertools.chain(unresolved, resolved):
                 for input in inputs:
                     if input in found:
                         continue
@@ -477,8 +480,21 @@ class Graph:
 
             if len(found) != len(inputs):
                 raise Exception('Cannot resolve input: ' + ', '.join(filter(found.__ne__, inputs)))
-            else:
-                return dep_calls, dep_paths
+
+            return dep_calls, dep_paths
+
+
+        def is_output_resolved(outputs):
+            for output in outputs:
+                for call in calls:
+                    if output in call.proto.input:
+                        return False
+
+                for p in unresolved:
+                    if output in p.inputs:
+                        return False
+
+            return True
 
         # init working queue and done queue
         unresolved = []
@@ -532,12 +548,18 @@ class Graph:
                         dep_path.output_paths.append(path)
 
                 del unresolved[0]
-                resolved.append(path)
 
-        self.paths.append(resolved[0])
-        self.paths.extend(reversed(resolved[1:]))
+                if path == output_path or is_output_resolved(path.outputs):
+                    resolved.insert(1, path)
+                else:
+                    unresolved.append(path)
+
+        self.paths.extend(resolved)
+
         for i in range(len(self.paths)):
             self.paths[i].id = i
+
+        print([ path.id for path in self.paths[0].output_paths])
 
     def get_value(self, name):
         if name in self.values:
@@ -749,8 +771,6 @@ class Model():
         index = []
 
         # write data
-        global align_rune
-
         with open(output_dir + os.path.sep + 'attr.db', 'wb') as file:
             offset = 0
 
@@ -763,6 +783,10 @@ class Model():
                     offset += file.write(np.zeros(pad, np.uint8).tobytes())
 
                 offset += file.write(buf)
+
+                pad = alignof(offset, 0)
+                if pad > 0:
+                    offset += file.write(np.zeros(pad, np.uint8).tobytes())
 
             for attr in self.attributes:
                 
