@@ -8,6 +8,13 @@ import numpy as np
 
 is_output_comment = True
 encoding = 'little'
+alignof = None
+
+def alignof_gcc(offset, size):
+    if size == 0:
+        size = 4    # Check x86 vs x86_64
+
+    return (size - (offset % size)) % size
 
 def get_output_dir(path):
     if path == None:
@@ -742,43 +749,44 @@ class Model():
         index = []
 
         # write data
+        global align_rune
+
         with open(output_dir + os.path.sep + 'attr.db', 'wb') as file:
-            align = 4
             offset = 0
 
-            def write(buf):
+            def write(buf, size):
                 nonlocal offset
                 nonlocal file
 
-                offset += file.write(buf)
-
-                pad = (align - (offset % align)) % align
+                pad = alignof(offset, size)
                 if pad > 0:
                     offset += file.write(np.zeros(pad, np.uint8).tobytes())
+
+                offset += file.write(buf)
 
             for attr in self.attributes:
                 
                 if attr.type == onnx.AttributeProto.UNDEFINED:
                     index.append(offset)
-                    write(np.array([ 0 ], np.uint32).tobytes())
+                    write(np.array([ 0 ], np.uint32).tobytes(), 4)
                 elif attr.type == onnx.AttributeProto.FLOAT:
                     index.append(offset)
-                    write(np.array([ attr.f ], np.float32).tobytes())
+                    write(np.array([ attr.f ], np.float32).tobytes(), 4)
                 elif attr.type == onnx.AttributeProto.INT:
                     index.append(offset)
-                    write(np.array([ attr.i ], np.int32).tobytes())
+                    write(np.array([ attr.i ], np.int32).tobytes(), 4)
                 elif attr.type == onnx.AttributeProto.STRING:
                     index.append(offset)
 
                     # write string
                     buf = bytearray(attr.s)
                     buf.append(0)
-                    write(buf)
+                    write(buf, 1)
                 elif attr.type == onnx.AttributeProto.TENSOR:
                     index.append(offset)
 
                     buf = encode_tensor(attr.t)
-                    write(buf)
+                    write(buf, 0)
                 elif attr.type == onnx.AttributeProto.GRAPH:
                     raise Exception('graph writing is not supported yet')
                 elif attr.type == onnx.AttributeProto.SPARSE_TENSOR:
@@ -787,23 +795,23 @@ class Model():
                     index.append(offset)
 
                     # write length
-                    write(np.array([ len(attr.floats) ], np.uint32).tobytes())
+                    write(np.array([ len(attr.floats) ], np.uint32).tobytes(), 4)
 
                     # write array
-                    write(np.array(attr.floats, np.float32).tobytes())
+                    write(np.array(attr.floats, np.float32).tobytes(), 4)
                 elif attr.type == onnx.AttributeProto.INTS:
                     index.append(offset)
 
                     # write length
-                    write(np.array([ len(attr.ints) ], np.uint32).tobytes())
+                    write(np.array([ len(attr.ints) ], np.uint32).tobytes(), 4)
 
                     # write array
-                    write(np.array(attr.ints, np.int32).tobytes())
+                    write(np.array(attr.ints, np.int32).tobytes(), 4)
                 elif attr.type == onnx.AttributeProto.STRINGS:
                     index.append(offset)
 
                     # write length
-                    write(np.array([ len(attr.strings) ], np.uint32).tobytes())
+                    write(np.array([ len(attr.strings) ], np.uint32).tobytes(), 4)
 
                     sub_offset = 4 + len(attr.string) * 4
                     sub_offsets = []
@@ -821,11 +829,11 @@ class Model():
 
                     # write index
                     for off in sub_offsets:
-                        write(np.array([ off ], np.uint32).tobytes())
+                        write(np.array([ off ], np.uint32).tobytes(), 4)
 
                     # write strings
                     for buf in sub_buf:
-                        write(buf)
+                        write(buf, 1)
                 elif attr.type == onnx.AttributeProto.TENSORS:
                     raise Exception('tensors writing is not supported yet')
                 elif attr.type == onnx.AttributeProto.GRAPHS:
@@ -851,6 +859,7 @@ def main():
     parser.add_argument('onnx', metavar='onnx or pb', type=argparse.FileType('rb'), nargs='+', help='an input ONNX model')
     parser.add_argument('-o', metavar='output', type=str, nargs='?', help='output directory(default is out)')
     parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'], help='output comments(true or false)')
+    parser.add_argument('-align', metavar='align', type=str, nargs='?', choices=['gcc'], help='attribute alignment rule')
 
     # parse args
     args = parser.parse_args()
@@ -863,6 +872,13 @@ def main():
     output_dir = get_output_dir(args.o)
     if output_dir == None:
         return
+
+    # alignment rule
+    global alignof
+    alignof = alignof_gcc;
+
+    if args.align == 'gcc':
+        alignof = alignof_gcc;
 
     for file in args.onnx:
         # parse onnx file
