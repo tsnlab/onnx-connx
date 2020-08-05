@@ -478,8 +478,8 @@ class Graph:
                 if input in self.initializer_names:
                     found.append(input)
 
-            if len(found) != len(inputs):
-                raise Exception('Cannot resolve input: ' + ', '.join(filter(found.__ne__, inputs)))
+            for input in filter(found.__ne__, inputs):
+                self.get_value(input) # Create new value
 
             return dep_calls, dep_paths
 
