@@ -559,8 +559,6 @@ class Graph:
         for i in range(len(self.paths)):
             self.paths[i].id = i
 
-        print([ path.id for path in self.paths[0].output_paths])
-
     def get_value(self, name):
         if name in self.values:
             return self.values[name]
