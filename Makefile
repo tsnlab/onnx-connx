@@ -12,4 +12,4 @@ yolo-tiny:
 	python onnx_connx/cli.py examples/yolo-tiny/* -o out/yolo-tiny
 
 clean:
-	rm -f out
+	rm -rf out
