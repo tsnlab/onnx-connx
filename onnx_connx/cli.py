@@ -48,8 +48,91 @@ def encode_tensor(tensor):
 
     return buf
 
+def find_gc_call(call, id, ref_count):
+    """
+    Find gargage collection call for value id
+    :param call: A call which created the value
+    :param call: value id which is created by the call
+    :return: gc call which has responsible to delete the value
+    """
+
+    paths = [ [ next_call ] for next_call in call.output_calls ]
+    ref_counts = [ 0 ] * len(paths)
+    visited = { }
+
+    # make paths
+    i = 0
+    while i < len(paths):
+        path = paths[i]
+
+        last_call = path[-1]
+
+        if last_call in visited: # don't extend but copy already extended one
+            org_path = visited[last_call]
+            idx = org_path.index(last_call)
+            path.extend(org_path[idx + 1:])
+            i += 1
+            continue
+
+        if id in last_call.inputs:
+            ref_counts[i] += 1
+
+        if len(last_call.output_calls) == 0:    # end of graph
+            i += 1
+        else:
+            path.append(last_call.output_calls[0])
+            paths.extend(( [ next_call ] for next_call in last_call.output_calls[1:] ))
+            ref_counts.extend( [ 0 ] * (len(last_call.output_calls) - 1))
+            visited[last_call] = path
+
+    # prune paths which is not using the value
+    candidates = []
+    for i in range(len(paths)):
+        if ref_counts[i] > 0:
+            candidates.append(paths[i])
+
+    # find gc call
+    if len(candidates) == 1:    # the next one of last input
+        path = paths[0]
+        for i in range(len(paths[0])):
+            call2 = path[i]
+
+            if id in call2.inputs:
+                ref_count -= 1
+
+            if ref_count == 0:
+                if i + 1 < len(path):
+                    return path[i + 1]
+                else:
+                    return None # end node - doesn't need to be gc
+    else:   # the last common call
+        length = min(( len(path) for path in paths ))
+
+        path = paths[0]
+        for i in range(length):
+            call2 = path[-(i + 1)]
+            for p in paths[1:]:
+                if call2 != p[-(i + 1)]:
+                    if i > 0:
+                        return path[-i]
+                    else:
+                        return None # end node - doesn't need to be gc
+
+    raise Exception('Cannot find GC call for value: ' + str(id) + ' (# of paths: ' + str(len(candidates)) + ')')
+
 def normalize_attributes(op, attrs):
+    def get_attr(name):
+        for attr in attrs:
+            if attr.name == name:
+                return attr
+
+        return None
+
     def attr_int(name, value):
+        attr = get_attr(name)
+        if attr != None:
+            return attr
+
         attr = onnx.AttributeProto()
         attr.name = name
         attr.type = onnx.AttributeProto.INT
@@ -58,6 +141,10 @@ def normalize_attributes(op, attrs):
         return attr
 
     def attr_float(name, value):
+        attr = get_attr(name)
+        if attr != None:
+            return attr
+
         attr = onnx.AttributeProto()
         attr.name = name
         attr.type = onnx.AttributeProto.FLOAT
@@ -66,6 +153,10 @@ def normalize_attributes(op, attrs):
         return attr
 
     def attr_string(name, value):
+        attr = get_attr(name)
+        if attr != None:
+            return attr
+
         attr = onnx.AttributeProto()
         attr.name = name
         attr.type = onnx.AttributeProto.STRING
@@ -74,6 +165,10 @@ def normalize_attributes(op, attrs):
         return attr
 
     def attr_ints(name, value):
+        attr = get_attr(name)
+        if attr != None:
+            return attr
+
         attr = onnx.AttributeProto()
         attr.name = name
         attr.type = onnx.AttributeProto.INTS
@@ -88,6 +183,10 @@ def normalize_attributes(op, attrs):
         return attr
 
     def attr_floats(name, value):
+        attr = get_attr(name)
+        if attr != None:
+            return attr
+
         attr = onnx.AttributeProto()
         attr.name = name
         attr.type = onnx.AttributeProto.FLOATS
@@ -102,6 +201,10 @@ def normalize_attributes(op, attrs):
         return attr
 
     def attr_strings(name, value):
+        attr = get_attr(name)
+        if attr != None:
+            return attr
+
         attr = onnx.AttributeProto()
         attr.name = name
         attr.type = onnx.AttributeProto.STRINGS
@@ -115,53 +218,66 @@ def normalize_attributes(op, attrs):
 
         return attr
 
-    def get_attr(name):
-        for attr in attrs:
-            if attr.name == name:
-                return attr
+    def attr_null(name):
+        attr = get_attr(name)
+        if attr != None:
+            return attr
 
-        return None
+        attr = onnx.AttributeProto()
+        attr.name = name
+        attr.type = onnx.AttributeProto.STRINGS
+
+        return attr
 
     result = []
 
     if op == 'Conv':
         kernel_shape = get_attr('kernel_shape')
 
-        auto_pad = get_attr('auto_pad') or attr_string('auto_pad', 'NOTSET')
+        auto_pad = attr_string('auto_pad', 'NOTSET')
         result.append(auto_pad)
 
-        result.append(get_attr('dilations') or attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
-        result.append(get_attr('group') or attr_int('group', 1))
+        result.append(attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
+        result.append(attr_int('group', 1))
         result.append(kernel_shape)
 
-        pads = get_attr('pads') or attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32))
+        pads = attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32))
         result.append(pads)
         if auto_pad.s == 'VALID':
             for i in range(len(kernel_shape.ints) * 2):
                 auto_pad.ints[i] = 0
 
-        result.append(get_attr('strides') or attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+        result.append(attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
     elif op == 'MaxPool':
         kernel_shape = get_attr('kernel_shape')
 
-        auto_pad = get_attr('auto_pad') or attr_string('auto_pad', 'NOTSET')
+        auto_pad = attr_string('auto_pad', 'NOTSET')
         result.append(auto_pad)
 
-        result.append(get_attr('ceil_mode') or attr_int('ceil_mode', 0))
-        result.append(get_attr('dilations') or attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
+        result.append(attr_int('ceil_mode', 0))
+        result.append(attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
         result.append(kernel_shape)
 
-        pads = get_attr('pads') or attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32))
+        pads = attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32))
         result.append(pads)
         if auto_pad.s == 'VALID':
             for i in range(len(kernel_shape.ints) * 2):
                 auto_pad.ints[i] = 0
 
-        result.append(get_attr('storage_order') or attr_int('storage_order', 0))
-        result.append(get_attr('strides') or attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
+        result.append(attr_int('storage_order', 0))
+        result.append(attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
     elif op == 'BatchNormalization':
-        result.append(get_attr('epsilon') or attr_int('epsilon', 0.00001))
-        result.append(get_attr('momentum') or attr_int('momentum', 0.9))
+        result.append(attr_int('epsilon', 0.00001))
+        result.append(attr_int('momentum', 0.9))
+    elif op == 'Resize':
+        result.append(attr_string('coordinate_transformation_mode', 'half_pixel'))
+        result.append(attr_float('cubic_coeff_a', -0.75))
+        result.append(attr_int('exclude_outside', 0))
+        result.append(attr_float('extrapolation_value',  0.0))
+        result.append(attr_string('mode', 'nearest'))
+        result.append(attr_string('nearest_mode', 'round_prefer_floor'))
+    elif op == 'NonMaxSuppression':
+        result.append(attr_int('center_point_box', 0))
 
     return result
 
@@ -170,101 +286,97 @@ class Value:
         self.type = None
         self.name = None
         self.id = None
+        self.ref_count = 0
         self.proto = None
 
 class Call:
     def __init__(self):
+        self.output_calls = []
+        self.input_calls = []
+
         self.outputs = []
         self.inputs = []
         self.attributes = []
+
         self.proto = None
 
-class Path:
-    def __init__(self, parent):
-        self.parent = parent 
-        self.id = None
-        self.outputs = []
-        self.inputs = []
-        self.output_paths = []
-        self.input_paths = []
-        self.calls = []
+    def insert_before(self, call):
+        # merge delet calls
+        if self.proto == None and len(self.input_calls) != 0 and len(self.output_calls) != 0:
+            self.inputs.extend(call.inputs)
+            return
 
-    def dump(self, output_dir, file):
-        file.write('path ' + str(self.id) + '\n')
-        file.write('\tinput_paths ' + ' '.join(str(path.id) for path in self.input_paths) + '\n')
-        file.write('\toutput_paths ' + ' '.join(str(path.id) for path in self.output_paths) + '\n')
+        # replace self.input_calls.output_calls = call
+        for input_call in self.input_calls:
+            for i in range(len(input_call.output_calls)):
+                if input_call.output_calls[i] == self:
+                    input_call.output_calls[i] = call
 
-        global is_output_comment
+        # set call.input_calls = self.input_calls
+        call.input_calls = self.input_calls
 
-        # inputs
-        file.write('\n\tinputs ')
+        # set call.output_calls = self
+        call.output_calls.append(self)
 
-        for input in self.inputs:
-            file.write(str(self.parent.values[input].id) + ' ')
+        # set self.input_call = call
+        self.input_calls = [ call ]
 
-        if is_output_comment:
-            file.write('# ' + ' '.join(self.inputs))
+    def name(self):
+        if self.proto == None:
+            if len(self.output_calls) != 0 and len(self.input_calls) == 0:
+                return 'input'
+            elif len(self.output_calls) == 0 and len(self.input_calls) != 0:
+                return 'output'
+            else:
+                return 'delete ' + str(self.inputs)
+        else:
+            return self.proto.name + ':' + self.proto.op_type
 
-        file.write('\n')
+    def print(self):
+        print('call ', self.name(), 'inputs:', self.inputs, 'outputs:', self.outputs)
+        print('\t', 'input_calls:', ' '.join([ call.name() for call in self.input_calls ]))
+        print('\t', 'output_calls:', ' '.join([ call.name() for call in self.output_calls ]))
 
-        # calls
-        file.write('\n\tcalls ' + str(len(self.calls)) + '\n')
+    def dump(self, file):
+        file.write('\tcall ')
 
-        for i in range(len(self.calls)):
-            call = self.calls[i]
+        if self.proto == None:
+            if len(self.output_calls) != 0 and len(self.input_calls) == 0:
+                file.write('input ')
+            elif len(self.output_calls) == 0 and len(self.input_calls) != 0:
+                file.write('output ')
+            else:
+                file.write('delete ')
+        else:
+            file.write(str(self.proto.op_type) + ' ')
 
-            attrs = normalize_attributes(call.proto.op_type, call.proto.attribute)
-
-            file.write('\tcall ')
-            file.write(str(call.proto.op_type) + ' ')
-            file.write(str(len(call.outputs)) + ' ')
-            file.write(str(len(call.inputs)) + ' ')
-            file.write(str(len(attrs)) + ' ')
-
-            for output in call.outputs:
-                file.write(str(output) + ' ')
-
-            for input in call.inputs:
-                file.write(str(input) + ' ')
-
-            for attr in attrs:
-                file.write(str(self.parent.parent.alloc_attribute(attr)) + ' ')
-
-            if is_output_comment:
-                file.write('# ')
-
-                file.write(' '.join(call.proto.output) + ' ')
-                file.write(' '.join(call.proto.input) + ' ')
-
-                for attr in attrs:
-                    file.write(attr.name + '=' + self.comment_attribute(attr) + ' ')
-
-            file.write('\n')
-
-            # garbage collection
-            deletes = []
-            for output in call.outputs:
-                if not self.is_use_after(output, i + 1):
-                    deletes.append(str(output))
-                    self.parent.deleted.append(output)
-
-            for input in call.inputs:
-                if not self.is_use_after(input, i + 1):
-                    deletes.append(str(input))
-                    self.parent.deleted.append(input)
-
-            file.write('\tdelete ' + ' '.join(deletes) + '\n')
-
-        # outputs
-        file.write('\n\toutputs ')
+        file.write(str(len(self.outputs)) + ' ')
+        file.write(str(len(self.inputs)) + ' ')
+        file.write(str(len(self.attributes)) + '  ')
 
         for output in self.outputs:
-            file.write(str(self.parent.values[output].id) + ' ')
+            file.write(str(output) + ' ')
 
-        if is_output_comment:
-            file.write('# ' + ' '.join(self.outputs))
+        file.write(' ')
 
-        file.write('\n\n')
+        for input in self.inputs:
+            file.write(str(input) + ' ')
+
+        file.write(' ')
+
+        for attr in self.attributes:
+            file.write(str(attr) + ' ')
+
+        if is_output_comment and self.proto != None:
+            file.write('# ')
+
+            file.write(' '.join(self.proto.output) + ' ')
+            file.write(' '.join(self.proto.input) + ' ')
+
+            for attr in self.proto.attribute:
+                file.write(attr.name + '=' + self.comment_attribute(attr) + ' ')
+
+        file.write('\n')
 
     def comment_attribute(self, attr):
         comment = ''
@@ -316,28 +428,44 @@ class Path:
 
         return comment
 
-    def is_use_after(self, id, idx):
-        if id == 0:
-            return True
+class Path:
+    def __init__(self):
+        self.id = None
+        self.output_paths = []
+        self.input_paths = []
+        self.calls = []
 
-        # check model's inputs and outputs
-        if id in self.parent.inputs or id in self.parent.outputs:
-            return True
+    def fill(self, call):
+        while call != None:
+            self.calls.append(call)
 
-        for i in range(idx, len(self.calls)):
+            if len(call.output_calls) == 1:
+                call = call.output_calls[0]
+            else:
+                call = None
+
+    def fill_backword(self, call):
+        while call != None:
+            self.calls.insert(0, call)
+
+            if len(call.input_calls) == 1:
+                call = call.input_calls[0]
+            else:
+                call = None
+
+    def dump(self, output_dir, file):
+        file.write('path ' + str(self.id) + '\n')
+        file.write('\tinput_paths ' + ' '.join(str(path.id) for path in self.input_paths) + '\n')
+        file.write('\toutput_paths ' + ' '.join(str(path.id) for path in self.output_paths) + '\n')
+
+        # calls
+        file.write('\n\tcalls ' + str(len(self.calls)) + '\n')
+
+        for i in range(len(self.calls)):
             call = self.calls[i]
+            call.dump(file)
 
-            if id in call.outputs or id in call.inputs:
-                return True
-
-        if len(self.calls) > 0 and id in self.calls[-1].outputs:
-            return True
-
-        for path in self.output_paths:
-            if path.is_use_after(id, 0):
-                return True
-
-        return False
+        file.write('\n')
 
 class Graph:
     def __init__(self, parent, model):
@@ -345,23 +473,25 @@ class Graph:
         self.inputs = []
         self.outputs = []
         self.values = {}
+        self.values_by_id = []
         self.initializer_names = []
         self.paths = []
-        self.deleted = []
         self.proto = model
 
+    def init(self):
         # add null to values
         value = Value()
         value.type = 'null'
         value.name = 'null'
-        value.id = 0
+        value.id = len(self.values)
         value.proto = None
 
         self.values[value.name] = value
+        self.values_by_id.append(value)
         self.initializer_names.append(value.name)
 
         # add tensor initializers to values 
-        for initializer in model.initializer:
+        for initializer in self.proto.initializer:
             value = Value()
             value.type = 'tensor'
             value.name = initializer.name
@@ -369,10 +499,11 @@ class Graph:
             value.proto = initializer
 
             self.values[value.name] = value
+            self.values_by_id.append(value)
             self.initializer_names.append(value.name)
 
         # add sparse_tensor initializers to values 
-        for sparse_initializer in model.sparse_initializer:
+        for sparse_initializer in self.proto.sparse_initializer:
             value = Value()
             value.type = 'sparse_tensor'
             value.name = sparse_initializer.name
@@ -380,55 +511,37 @@ class Graph:
             value.proto = sparse_initializer
 
             self.values[value.name] = value
+            self.values_by_id.append(value)
             self.initializer_names.append(value.name)
 
-        '''Algorithm description
-
-        Graph.inputPath is virtual input path
-        Graph.outputPath is virtual output path
-        unresolved is a queue
-        resolved is a queue
-        push(unresolved, outputPath)
-        push(resolved, inputPath)
-        while(len(unresolved) > 0)
-            path = peek(unresolved)
-            if(path.inputNameCount == 0)
-                pop(unresolved)
-                push(resolved, path)
-                continue
-
-            nodes, paths = find_dependencies(path)
-
-            if(not found)
-                exception
-            
-            if(len(nodes) == 1 and len(paths) == 0)
-                extend path
-            else 
-                for node in nodes
-                    push(unresolved, newPath(node))
-
-                add new paths and old paths to the path
-
-                pop(unresolved)
-                push(resolved, path)
-        '''
-
         # set graph's inputs and outputs
-        for input in model.input:
+        for input in self.proto.input:
             if input.name in self.initializer_names:
                 continue
 
             value = self.get_value(input.name)
             self.inputs.append(value.id)
 
-        for output in model.output:
+        for output in self.proto.output:
             value = self.get_value(output.name)
             self.outputs.append(value.id)
 
-        # make call list
-        calls = []
-        for node in model.node:
+        self.schedule()
+
+    def schedule(self):
+        # make call tree
+        input_call = Call()
+        input_call.outputs.extend(self.inputs)
+
+        output_call = Call()
+        output_call.inputs.extend(self.outputs)
+        for id in self.outputs:
+            value = self.values_by_id[id]
+            value.ref_count += 1
+
+        calls = [ input_call, output_call ]
+
+        for node in self.proto.node:
             call = Call()
 
             for output in node.output:
@@ -437,127 +550,125 @@ class Graph:
 
             for input in node.input:
                 value = self.get_value(input)
+                value.ref_count += 1
                 call.inputs.append(value.id)
 
-            call.attributes.extend(node.attribute)
+            attrs = normalize_attributes(node.op_type, node.attribute)
+            for attr in attrs:
+                call.attributes.append(self.parent.alloc_attribute(attr))
+
             call.proto = node
 
             calls.append(call)
 
-        """
-        @return (list of calls, list of paths)
-        """
-        def find_dependencies(inputs):
-            found = []
+        # make dependency (call.input_calls, output_calls)
+        for call in calls:
+            missing = []
+            missing.extend(call.inputs)
 
-            dep_calls = []
-            dep_paths = []
+            # find from initializers
+            missing[:] = itertools.filterfalse(lambda id: id < len(self.initializer_names), missing)
 
-            for call in calls:
-                for input in inputs:
-                    if input in found:
-                        continue
-
-                    if input in call.proto.output:
-                        dep_calls.append(call)
-                        found.append(input)
-
-            for p in itertools.chain(unresolved, resolved):
-                for input in inputs:
-                    if input in found:
-                        continue
-
-                    if input in p.outputs:
-                        dep_paths.append(p)
-                        found.append(input)
-
-            for input in inputs:
-                if input in found:
+            # find from calls
+            for call2 in calls:
+                if call == call2:
                     continue
 
-                if input in self.initializer_names:
-                    found.append(input)
+                old_len = len(missing)
 
-            for input in filter(found.__ne__, inputs):
-                self.get_value(input) # Create new value
+                missing[:] = itertools.filterfalse(lambda id: id in call2.outputs, missing)
 
-            return dep_calls, dep_paths
+                if old_len != len(missing):
+                    call.input_calls.append(call2)
+                    call2.output_calls.append(call)
 
+            # Check missing dependency
+            if len(missing) > 0:
+                if call.proto == None:
+                    if len(call.outputs) == 0:
+                        raise Exception('Cannot find depency for call output_call: ' + ' '.join(missing))
+                    else:
+                        raise Exception('Cannot find depency for call input_call: ' + ' '.join(missing))
+                else:
+                    raise Exception('Cannot find depency for call ' + call.proto.name + ':' + call.proto.op_type + ': ' + ' '.join(missing))
 
-        def is_output_resolved(outputs):
-            for output in outputs:
-                for call in calls:
-                    if output in call.proto.input:
-                        return False
+        # garbage collection
+        for call in calls[2:]:  # escape input_call and output_call
+            for id in call.outputs:
+                if id in self.inputs or id in self.outputs:
+                    continue
 
-                for p in unresolved:
-                    if output in p.inputs:
-                        return False
+                value = self.values_by_id[id]
+                try:
+                    call2 = find_gc_call(call, id, value.ref_count)
+                except Exception as ex:
+                    print('cannot find dep for', self.values_by_id[id].name)
+                    raise ex
+                if call2 != None:
+                    delete_call = Call()
+                    delete_call.inputs.append(id)
+                    call2.insert_before(delete_call)
 
-            return True
+        # make paths
+        paths = {}  # key: start call, value: path
 
-        # init working queue and done queue
-        unresolved = []
-        resolved = []
+        input_path = Path()
+        input_path.fill(input_call)
+        paths[input_call] = input_path
 
-        input_path = Path(self)
-        for input in model.input:
-            if not input.name in self.initializer_names:
-                input_path.outputs.append(input.name)
-        resolved.append(input_path)
+        output_path = Path()
+        output_path.fill_backword(output_call)
+        paths[output_path.calls[0]] = output_path
 
-        output_path = Path(self)
-        for output in model.output:
-            output_path.inputs.append(output.name)
-            output_path.outputs.append(output.name)
-        unresolved.append(output_path)
+        unresolved = [ input_path ]
 
-        # loop queue
+        # make path's input/output relationship
         while len(unresolved) > 0:
             path = unresolved[0]
 
-            if len(path.inputs) == 0:
-                del unresolved[0]
-                resolved.append(path)
-                continue
+            for next_call in path.calls[-1].output_calls:
+                next_path = None
 
-            dep_calls, dep_paths = find_dependencies(path.inputs)
-
-            if len(dep_calls) == 1 and len(dep_paths) == 0:
-                calls.remove(dep_calls[0])
-                path.calls.insert(0, dep_calls[0])
-                path.inputs = list(dep_calls[0].proto.input)
-            else:
-                for dep_call in dep_calls:
-                    new_path = Path(self)
-                    new_path.outputs.extend(dep_call.proto.output)
-                    new_path.inputs.extend(dep_call.proto.input)
-                    new_path.calls.append(dep_call)
-
-                    path.input_paths.append(new_path)
-                    new_path.output_paths.append(path)
-                    calls.remove(dep_call)
-
-                    unresolved.append(new_path)
-
-                for dep_path in dep_paths:
-                    if not dep_path in path.input_paths:
-                        path.input_paths.append(dep_path)
-
-                    if not path in dep_path.output_paths:
-                        dep_path.output_paths.append(path)
-
-                del unresolved[0]
-
-                if path == output_path or is_output_resolved(path.outputs):
-                    resolved.insert(1, path)
+                if next_call in paths:
+                    next_path = paths[next_call]
                 else:
-                    unresolved.append(path)
+                    next_path = Path()
+                    next_path.fill(next_call)
 
-        self.paths.extend(resolved)
+                    unresolved.append(next_path)
+                    paths[next_call] = next_path
 
-        for i in range(len(self.paths)):
-            self.paths[i].id = i
+                path.output_paths.append(next_path)
+                next_path.input_paths.append(path)
+
+            del unresolved[0]
+
+        # order paths
+        input_path.id = len(self.paths)
+        self.paths.append(input_path)
+        unresolved = [ *input_path.output_paths ]
+
+        while len(unresolved) > 0:
+            path = unresolved[0]
+
+            is_resolved = True
+
+            for prev_path in path.input_paths:
+                if prev_path not in self.paths:
+                    is_resolved = False
+                    break
+
+            del unresolved[0]
+
+            if is_resolved:
+                path.id = len(self.paths)
+                self.paths.append(path)
+
+                for next_path in path.output_paths:
+                    if next_path not in self.paths and next_path not in unresolved:
+                        unresolved.append(next_path)
+            else:
+                unresolved.append(path)
 
     def get_value(self, name):
         if name in self.values:
@@ -569,6 +680,7 @@ class Graph:
             value.id = len(self.values)
 
             self.values[value.name] = value
+            self.values_by_id.append(value)
 
             return value
 
@@ -629,8 +741,10 @@ class Graph:
 
         file.write('\n')
 
-        if is_output_comment:
-            file.write('# paths\n')
+        # paths
+        file.write('paths ')
+        file.write(str(len(self.paths)))
+        file.write('\n')
 
         for path in self.paths:
             path.dump(output_dir, file)
@@ -650,18 +764,6 @@ class Graph:
                 file.write(str(path.id) + ' ')
         file.write('\n')
 
-        file.write('clean ')
-        for key, value in self.values.items():
-            if not value.id in self.deleted:
-                if value.id == 0:
-                    continue
-
-                file.write(str(value.id) + ' ')
-
-        file.write('\n')
-
-        file.write('\0')
-
 class Model():
     def __init__(self, model):
         self.proto = model
@@ -673,13 +775,12 @@ class Model():
         null_attr.type = onnx.AttributeProto.UNDEFINED
         self.attributes.append(null_attr)
 
+        self.graph.init()
+
     def dump(self, output_dir):
         global is_output_comment
 
         file = open(output_dir + os.path.sep + 'main.cnx', 'w')
-
-        if is_output_comment:
-            file.write('# metadata\n')
 
         file.write('opset ')
         opset_ver = -1
@@ -687,10 +788,6 @@ class Model():
             if opset.version > opset_ver:
                 opset_ver = opset.version
         file.write(str(opset_ver) + ' ')
-        file.write('\n')
-
-        file.write('paths ')
-        file.write(str(len(self.graph.paths)))
         file.write('\n')
 
         self.graph.dump(output_dir, file)
@@ -757,6 +854,9 @@ class Model():
         return -1
 
     def alloc_attribute(self, attr):
+        if attr.type == onnx.AttributeProto.UNDEFINED:
+            return 0
+
         id = self.has_attribute(attr)
         if id >= 0:
             return id
