@@ -323,9 +323,9 @@ class Call:
 
     def name(self):
         if self.proto == None:
-            if len(self.output_calls) != 0 and len(self.input_calls) == 0:
+            if len(self.outputs) != 0 and len(self.inputs) == 0:
                 return 'input'
-            elif len(self.output_calls) == 0 and len(self.input_calls) != 0:
+            elif len(self.outputs) == 0 and len(self.inputs) != 0:
                 return 'output'
             else:
                 return 'delete ' + str(self.inputs)
@@ -439,7 +439,7 @@ class Path:
         while call != None:
             self.calls.append(call)
 
-            if len(call.output_calls) == 1:
+            if len(call.output_calls) == 1 and len(call.output_calls[0].input_calls) == 1:
                 call = call.output_calls[0]
             else:
                 call = None
@@ -448,7 +448,7 @@ class Path:
         while call != None:
             self.calls.insert(0, call)
 
-            if len(call.input_calls) == 1:
+            if len(call.input_calls) == 1 and len(call.input_calls[0].output_calls) == 1:
                 call = call.input_calls[0]
             else:
                 call = None
@@ -563,39 +563,60 @@ class Graph:
 
         # make dependency (call.input_calls, output_calls)
         for call in calls:
-            missing = []
-            missing.extend(call.inputs)
+            input_missing = [ *call.inputs ]
+            output_missing = [ *call.outputs ]
 
             # find from initializers
-            missing[:] = itertools.filterfalse(lambda id: id < len(self.initializer_names), missing)
+            input_missing[:] = itertools.filterfalse(lambda id: id < len(self.initializer_names), input_missing)
+            output_missing[:] = itertools.filterfalse(lambda id: id < len(self.initializer_names), output_missing)
 
             # find from calls
             for call2 in calls:
                 if call == call2:
                     continue
 
-                old_len = len(missing)
+                # check input dependency
+                old_input_len = len(input_missing)
+                input_missing[:] = itertools.filterfalse(lambda id: id in call2.outputs, input_missing)
 
-                missing[:] = itertools.filterfalse(lambda id: id in call2.outputs, missing)
+                if old_input_len != len(input_missing):
+                    if call not in call2.output_calls:
+                        call2.output_calls.append(call)
 
-                if old_len != len(missing):
-                    call.input_calls.append(call2)
-                    call2.output_calls.append(call)
+                    if call2 not in call.input_calls:
+                        call.input_calls.append(call2)
+
+                # check output dependency
+                old_output_len = len(output_missing)
+                output_missing[:] = itertools.filterfalse(lambda id: id in call2.inputs, output_missing)
+
+                if old_output_len != len(output_missing):
+                    if call2 not in call.output_calls:
+                        call.output_calls.append(call2)
+
+                    if call not in call2.input_calls:
+                        call2.input_calls.append(call)
 
             # Check missing dependency
-            if len(missing) > 0:
-                if call.proto == None:
-                    if len(call.outputs) == 0:
-                        raise Exception('Cannot find depency for call output_call: ' + ' '.join(missing))
-                    else:
-                        raise Exception('Cannot find depency for call input_call: ' + ' '.join(missing))
-                else:
-                    raise Exception('Cannot find depency for call ' + call.proto.name + ':' + call.proto.op_type + ': ' + ' '.join(missing))
+            if len(input_missing) > 0:
+                raise Exception('Cannot find input dependency for call ' + call.name() + ': ' + str(input_missing))
+
+            if len(output_missing) > 0:
+                raise Exception('Cannot find output dependency for call ' + call.name() + ': ' + str(output_missing))
+
+        # make dependency (input_call -> call input only initializers)
+        for call in calls[1:]:  # ignore input_call itself
+            if len(call.input_calls) == 0 and call not in input_call.output_calls:
+                input_call.output_calls.append(call)
+                call.input_calls.append(input_call)
+
+        for call in calls:
+            call.print()
 
         # garbage collection
-        for call in calls[2:]:  # escape input_call and output_call
+        for call in calls[2:]:  # ignore input_call and output_call
             for id in call.outputs:
-                if id in self.inputs or id in self.outputs:
+                if id in self.inputs or id in self.outputs: # ignore input values and output values
                     continue
 
                 value = self.values_by_id[id]
@@ -791,6 +812,7 @@ class Model():
         file.write('\n')
 
         self.graph.dump(output_dir, file)
+        file.write('\0')
 
         file.close()
 
