@@ -90,6 +90,7 @@ def find_gc_call(call, id, ref_count):
                     next_path = path
                 else:
                     next_path = []
+                    paths.append(next_path)
                     ref_counts.append(0)
 
                 next_path.append(next_call)
@@ -289,6 +290,8 @@ def normalize_attributes(op, attrs):
         result.append(attr_string('nearest_mode', 'round_prefer_floor'))
     elif op == 'NonMaxSuppression':
         result.append(attr_int('center_point_box', 0))
+    elif op == 'Cast':
+        result.append(attr_int('to', 0))
 
     return result
 
@@ -312,11 +315,6 @@ class Call:
         self.proto = None
 
     def insert_before(self, call):
-        # merge delet calls
-        if self.proto == None and len(self.input_calls) != 0 and len(self.output_calls) != 0:
-            self.inputs.extend(call.inputs)
-            return
-
         # replace self.input_calls.output_calls = call
         for input_call in self.input_calls:
             for i in range(len(input_call.output_calls)):
@@ -330,14 +328,9 @@ class Call:
         call.output_calls.append(self)
 
         # set self.input_call = call
-        self.input_calls = [ call ]
+        self.input_calls = [call]
 
     def insert_after(self, call):
-        # merge delet calls
-        if self.proto == None and len(self.input_calls) != 0 and len(self.output_calls) != 0:
-            self.inputs.extend(call.inputs)
-            return
-
         # replace self.output_calls.input_calls = call
         for output_call in self.output_calls:
             for i in range(len(output_call.input_calls)):
@@ -351,14 +344,14 @@ class Call:
         call.input_calls.append(self)
 
         # set self.output_call = call
-        self.output_calls = [ call ]
+        self.output_calls = [call]
 
     def name(self):
         if self.proto == None:
-            if len(self.outputs) != 0 and len(self.inputs) == 0:
-                return 'input'
-            elif len(self.outputs) == 0 and len(self.inputs) != 0:
-                return 'output'
+            if len(self.output_calls) != 0 and len(self.input_calls) == 0:
+                return 'input ' + str(self.outputs)
+            elif len(self.output_calls) == 0 and len(self.input_calls) != 0:
+                return 'output ' + str(self.inputs)
             else:
                 return 'delete ' + str(self.inputs)
         else:
@@ -634,7 +627,8 @@ class Graph:
                 raise Exception('Cannot find input dependency for call ' + call.name() + ': ' + str(input_missing))
 
             if len(output_missing) > 0:
-                raise Exception('Cannot find output dependency for call ' + call.name() + ': ' + str(output_missing))
+                for orphant_id in output_missing:
+                    print('WARN: orphant output:', orphant_id, self.values_by_id[orphant_id].name)
 
         # make dependency (input_call -> call input only initializers)
         for call in calls[1:]:  # ignore input_call itself
@@ -649,12 +643,27 @@ class Graph:
                     continue
 
                 value = self.values_by_id[id]
-                call2 = find_gc_call(call, id, value.ref_count)
+                if value.ref_count == 0: # ignore orphant value
+                    continue
 
-                if call2 != None:
-                    delete_call = Call()
-                    delete_call.inputs.append(id)
-                    call2.insert_after(delete_call)
+                gc_call = find_gc_call(call, id, value.ref_count)
+
+                if gc_call != None:
+                    next_call = None
+                    if len(gc_call.output_calls) == 1:
+                        next_call = gc_call.output_calls[0]
+
+                    if gc_call.proto is None and gc_call is not input_call and gc_call is not output_call:
+                        # merge deletes
+                        gc_call.inputs.append(id)
+                    elif next_call is not None and next_call.proto is None and next_call is not input_call and next_call is not output_call:
+                        # merge deletes
+                        next_call.inputs.append(id)
+                    else:
+                        # insert delete
+                        delete_call = Call()
+                        delete_call.inputs.append(id)
+                        gc_call.insert_after(delete_call)
 
         # make paths
         paths = {}  # key: start call, value: path
@@ -838,7 +847,6 @@ class Model():
         file.write('\n')
 
         self.graph.dump(output_dir, file)
-        file.write('\0')
 
         file.close()
 
