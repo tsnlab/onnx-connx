@@ -64,8 +64,10 @@ def find_gc_call(call, id, ref_count):
     i = 0
     while i < len(paths):
         path = paths[i]
-
         last_call = path[-1]
+
+        if id in last_call.inputs:
+            ref_counts[i] += 1
 
         if last_call in visited: # don't extend but copy already extended one
             org_path = visited[last_call]
@@ -74,51 +76,60 @@ def find_gc_call(call, id, ref_count):
             i += 1
             continue
 
-        if id in last_call.inputs:
-            ref_counts[i] += 1
+        if (len(last_call.input_calls) > 1 or len(last_call.output_calls) > 1) and last_call not in visited:   # Check the node is branch
+            visited[last_call] = path
 
         if len(last_call.output_calls) == 0:    # end of graph
             i += 1
         else:
-            path.append(last_call.output_calls[0])
-            paths.extend(( [ next_call ] for next_call in last_call.output_calls[1:] ))
-            ref_counts.extend( [ 0 ] * (len(last_call.output_calls) - 1))
-            visited[last_call] = path
+            for j in range(len(last_call.output_calls)):
+                next_call = last_call.output_calls[j]
+                next_path = None
+
+                if j == 0:
+                    next_path = path
+                else:
+                    next_path = []
+                    ref_counts.append(0)
+
+                next_path.append(next_call)
 
     # prune paths which is not using the value
     candidates = []
+    candidate_ref_counts = []
     for i in range(len(paths)):
         if ref_counts[i] > 0:
             candidates.append(paths[i])
+            candidate_ref_counts.append(ref_counts[i])
+
+    if len(candidates) == 0:
+        raise Exception('There is no GC path for value: ' + str(id) + '(# of paths: ' + str(len(paths)) + ')')
 
     # find gc call
-    if len(candidates) == 1:    # the next one of last input
-        path = paths[0]
-        for i in range(len(paths[0])):
-            call2 = path[i]
-
+    if len(candidates) == 1:    # the last one of last input
+        for call2 in candidates[0]:
             if id in call2.inputs:
                 ref_count -= 1
 
             if ref_count == 0:
-                if i + 1 < len(path):
-                    return path[i + 1]
-                else:
-                    return None # end node - doesn't need to be gc
+                return call2
     else:   # the last common call
-        length = min(( len(path) for path in paths ))
+        length = min(( len(path) for path in candidates ))
 
-        path = paths[0]
+        last_common_call = None
+        path = candidates[0]
         for i in range(length):
             call2 = path[-(i + 1)]
-            for p in paths[1:]:
+            for p in candidates[1:]:
                 if call2 != p[-(i + 1)]:
-                    if i > 0:
-                        return path[-i]
-                    else:
-                        return None # end node - doesn't need to be gc
+                    break
 
-    raise Exception('Cannot find GC call for value: ' + str(id) + ' (# of paths: ' + str(len(candidates)) + ')')
+            last_common_call = call2
+
+        if last_common_call != None:
+            return last_common_call
+
+    raise Exception('Cannot find GC call for value: ' + str(id) + ' (# of candidate paths: ' + str(len(candidates)) + ')')
 
 def normalize_attributes(op, attrs):
     def get_attr(name):
@@ -320,6 +331,27 @@ class Call:
 
         # set self.input_call = call
         self.input_calls = [ call ]
+
+    def insert_after(self, call):
+        # merge delet calls
+        if self.proto == None and len(self.input_calls) != 0 and len(self.output_calls) != 0:
+            self.inputs.extend(call.inputs)
+            return
+
+        # replace self.output_calls.input_calls = call
+        for output_call in self.output_calls:
+            for i in range(len(output_call.input_calls)):
+                if output_call.input_calls[i] == self:
+                    output_call.input_calls[i] = call
+
+        # set call.output_calls = self.output_calls
+        call.output_calls = self.output_calls
+
+        # set call.input_calls = self
+        call.input_calls.append(self)
+
+        # set self.output_call = call
+        self.output_calls = [ call ]
 
     def name(self):
         if self.proto == None:
@@ -610,9 +642,6 @@ class Graph:
                 input_call.output_calls.append(call)
                 call.input_calls.append(input_call)
 
-        for call in calls:
-            call.print()
-
         # garbage collection
         for call in calls[2:]:  # ignore input_call and output_call
             for id in call.outputs:
@@ -620,15 +649,12 @@ class Graph:
                     continue
 
                 value = self.values_by_id[id]
-                try:
-                    call2 = find_gc_call(call, id, value.ref_count)
-                except Exception as ex:
-                    print('cannot find dep for', self.values_by_id[id].name)
-                    raise ex
+                call2 = find_gc_call(call, id, value.ref_count)
+
                 if call2 != None:
                     delete_call = Call()
                     delete_call.inputs.append(id)
-                    call2.insert_before(delete_call)
+                    call2.insert_after(delete_call)
 
         # make paths
         paths = {}  # key: start call, value: path
