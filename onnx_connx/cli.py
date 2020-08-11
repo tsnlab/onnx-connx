@@ -19,7 +19,7 @@ def alignof_gcc(offset, size):
 
 
 def get_output_dir(path):
-    if path == None:
+    if path is None:
         path = 'out'
 
     try:
@@ -131,7 +131,7 @@ def find_gc_call(call, id, ref_count):
 
             last_common_call = call2
 
-        if last_common_call != None:
+        if last_common_call is not None:
             return last_common_call
 
     raise Exception(
@@ -148,7 +148,7 @@ def normalize_attributes(op, attrs):
 
     def attr_int(name, value):
         attr = get_attr(name)
-        if attr != None:
+        if attr is not None:
             return attr
 
         attr = onnx.AttributeProto()
@@ -160,7 +160,7 @@ def normalize_attributes(op, attrs):
 
     def attr_float(name, value):
         attr = get_attr(name)
-        if attr != None:
+        if attr is not None:
             return attr
 
         attr = onnx.AttributeProto()
@@ -172,7 +172,7 @@ def normalize_attributes(op, attrs):
 
     def attr_string(name, value):
         attr = get_attr(name)
-        if attr != None:
+        if attr is not None:
             return attr
 
         attr = onnx.AttributeProto()
@@ -184,7 +184,7 @@ def normalize_attributes(op, attrs):
 
     def attr_ints(name, value):
         attr = get_attr(name)
-        if attr != None:
+        if attr is not None:
             return attr
 
         attr = onnx.AttributeProto()
@@ -202,7 +202,7 @@ def normalize_attributes(op, attrs):
 
     def attr_floats(name, value):
         attr = get_attr(name)
-        if attr != None:
+        if attr is not None:
             return attr
 
         attr = onnx.AttributeProto()
@@ -220,7 +220,7 @@ def normalize_attributes(op, attrs):
 
     def attr_strings(name, value):
         attr = get_attr(name)
-        if attr != None:
+        if attr is not None:
             return attr
 
         attr = onnx.AttributeProto()
@@ -238,7 +238,7 @@ def normalize_attributes(op, attrs):
 
     def attr_null(name):
         attr = get_attr(name)
-        if attr != None:
+        if attr is not None:
             return attr
 
         attr = onnx.AttributeProto()
@@ -322,7 +322,7 @@ class Call:
 
     def insert_before(self, call):
         # merge delet calls
-        if self.proto == None and len(self.input_calls) != 0 and len(self.output_calls) != 0:
+        if self.proto is None and len(self.input_calls) != 0 and len(self.output_calls) != 0:
             self.inputs.extend(call.inputs)
             return
 
@@ -343,7 +343,7 @@ class Call:
 
     def insert_after(self, call):
         # merge delet calls
-        if self.proto == None and len(self.input_calls) != 0 and len(self.output_calls) != 0:
+        if self.proto is None and len(self.input_calls) != 0 and len(self.output_calls) != 0:
             self.inputs.extend(call.inputs)
             return
 
@@ -363,7 +363,7 @@ class Call:
         self.output_calls = [call]
 
     def name(self):
-        if self.proto == None:
+        if self.proto is None:
             if len(self.outputs) != 0 and len(self.inputs) == 0:
                 return 'input'
             elif len(self.outputs) == 0 and len(self.inputs) != 0:
@@ -381,7 +381,7 @@ class Call:
     def dump(self, file):
         file.write('\tcall ')
 
-        if self.proto == None:
+        if self.proto is None:
             if len(self.output_calls) != 0 and len(self.input_calls) == 0:
                 file.write('input ')
             elif len(self.output_calls) == 0 and len(self.input_calls) != 0:
@@ -408,7 +408,7 @@ class Call:
         for attr in self.attributes:
             file.write(str(attr) + ' ')
 
-        if is_output_comment and self.proto != None:
+        if is_output_comment and self.proto is not None:
             file.write('# ')
 
             file.write(' '.join(self.proto.output) + ' ')
@@ -478,7 +478,7 @@ class Path:
         self.calls = []
 
     def fill(self, call):
-        while call != None:
+        while call is not None:
             self.calls.append(call)
 
             if len(call.output_calls) == 1 and len(call.output_calls[0].input_calls) == 1:
@@ -487,7 +487,7 @@ class Path:
                 call = None
 
     def fill_backword(self, call):
-        while call != None:
+        while call is not None:
             self.calls.insert(0, call)
 
             if len(call.input_calls) == 1 and len(call.input_calls[0].output_calls) == 1:
@@ -662,7 +662,7 @@ class Graph:
                 value = self.values_by_id[id]
                 call2 = find_gc_call(call, id, value.ref_count)
 
-                if call2 != None:
+                if call2 is not None:
                     delete_call = Call()
                     delete_call.inputs.append(id)
                     call2.insert_after(delete_call)
@@ -1052,11 +1052,11 @@ def main():
 
     # comment option
     global is_output_comment
-    is_output_comment = args.c == None or args.c == 'true' or args.c == 'True'
+    is_output_comment = args.c is None or args.c == 'true' or args.c == 'True'
 
     # mkdir output_dir
     output_dir = get_output_dir(args.o)
-    if output_dir == None:
+    if output_dir is None:
         return
 
     # alignment rule
