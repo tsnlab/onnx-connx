@@ -1,20 +1,22 @@
-import itertools
 import argparse
-import sys
+import itertools
 import os
+
+import numpy as np
 import onnx
 from onnx import numpy_helper
-import numpy as np
 
 is_output_comment = True
 encoding = 'little'
 alignof = None
 
+
 def alignof_gcc(offset, size):
     if size == 0:
-        size = 4    # Check x86 vs x86_64
+        size = 4  # Check x86 vs x86_64
 
     return (size - (offset % size)) % size
+
 
 def get_output_dir(path):
     if path == None:
@@ -29,24 +31,26 @@ def get_output_dir(path):
 
     return path
 
+
 def encode_tensor(tensor):
     buf = bytearray()
 
     # write type
-    buf += np.array([ tensor.data_type ], np.uint32).tobytes()
+    buf += np.array([tensor.data_type], np.uint32).tobytes()
 
     # write dimension
     dimension = len(tensor.dims)
-    buf += np.array([ dimension ], np.uint32).tobytes()
+    buf += np.array([dimension], np.uint32).tobytes()
 
     # write lengths
     for i in range(dimension):
-        buf += np.array([ tensor.dims[i] ], np.uint32).tobytes()
+        buf += np.array([tensor.dims[i]], np.uint32).tobytes()
 
     # write array
     buf += numpy_helper.to_array(tensor).tobytes()
 
     return buf
+
 
 def find_gc_call(call, id, ref_count):
     """
@@ -56,9 +60,9 @@ def find_gc_call(call, id, ref_count):
     :return: gc call which has responsible to delete the value
     """
 
-    paths = [ [ next_call ] for next_call in call.output_calls ]
-    ref_counts = [ 0 ] * len(paths)
-    visited = { }
+    paths = [[next_call] for next_call in call.output_calls]
+    ref_counts = [0] * len(paths)
+    visited = {}
 
     # make paths
     i = 0
@@ -69,17 +73,18 @@ def find_gc_call(call, id, ref_count):
         if id in last_call.inputs:
             ref_counts[i] += 1
 
-        if last_call in visited: # don't extend but copy already extended one
+        if last_call in visited:  # don't extend but copy already extended one
             org_path = visited[last_call]
             idx = org_path.index(last_call)
             path.extend(org_path[idx + 1:])
             i += 1
             continue
 
-        if (len(last_call.input_calls) > 1 or len(last_call.output_calls) > 1) and last_call not in visited:   # Check the node is branch
+        if (len(last_call.input_calls) > 1 or len(
+                last_call.output_calls) > 1) and last_call not in visited:  # Check the node is branch
             visited[last_call] = path
 
-        if len(last_call.output_calls) == 0:    # end of graph
+        if len(last_call.output_calls) == 0:  # end of graph
             i += 1
         else:
             for j in range(len(last_call.output_calls)):
@@ -106,15 +111,15 @@ def find_gc_call(call, id, ref_count):
         raise Exception('There is no GC path for value: ' + str(id) + '(# of paths: ' + str(len(paths)) + ')')
 
     # find gc call
-    if len(candidates) == 1:    # the last one of last input
+    if len(candidates) == 1:  # the last one of last input
         for call2 in candidates[0]:
             if id in call2.inputs:
                 ref_count -= 1
 
             if ref_count == 0:
                 return call2
-    else:   # the last common call
-        length = min(( len(path) for path in candidates ))
+    else:  # the last common call
+        length = min((len(path) for path in candidates))
 
         last_common_call = None
         path = candidates[0]
@@ -129,7 +134,9 @@ def find_gc_call(call, id, ref_count):
         if last_common_call != None:
             return last_common_call
 
-    raise Exception('Cannot find GC call for value: ' + str(id) + ' (# of candidate paths: ' + str(len(candidates)) + ')')
+    raise Exception(
+        'Cannot find GC call for value: ' + str(id) + ' (# of candidate paths: ' + str(len(candidates)) + ')')
+
 
 def normalize_attributes(op, attrs):
     def get_attr(name):
@@ -284,13 +291,14 @@ def normalize_attributes(op, attrs):
         result.append(attr_string('coordinate_transformation_mode', 'half_pixel'))
         result.append(attr_float('cubic_coeff_a', -0.75))
         result.append(attr_int('exclude_outside', 0))
-        result.append(attr_float('extrapolation_value',  0.0))
+        result.append(attr_float('extrapolation_value', 0.0))
         result.append(attr_string('mode', 'nearest'))
         result.append(attr_string('nearest_mode', 'round_prefer_floor'))
     elif op == 'NonMaxSuppression':
         result.append(attr_int('center_point_box', 0))
 
     return result
+
 
 class Value:
     def __init__(self):
@@ -299,6 +307,7 @@ class Value:
         self.id = None
         self.ref_count = 0
         self.proto = None
+
 
 class Call:
     def __init__(self):
@@ -330,7 +339,7 @@ class Call:
         call.output_calls.append(self)
 
         # set self.input_call = call
-        self.input_calls = [ call ]
+        self.input_calls = [call]
 
     def insert_after(self, call):
         # merge delet calls
@@ -351,7 +360,7 @@ class Call:
         call.input_calls.append(self)
 
         # set self.output_call = call
-        self.output_calls = [ call ]
+        self.output_calls = [call]
 
     def name(self):
         if self.proto == None:
@@ -366,8 +375,8 @@ class Call:
 
     def print(self):
         print('call ', self.name(), 'inputs:', self.inputs, 'outputs:', self.outputs)
-        print('\t', 'input_calls:', ' '.join([ call.name() for call in self.input_calls ]))
-        print('\t', 'output_calls:', ' '.join([ call.name() for call in self.output_calls ]))
+        print('\t', 'input_calls:', ' '.join([call.name() for call in self.input_calls]))
+        print('\t', 'output_calls:', ' '.join([call.name() for call in self.output_calls]))
 
     def dump(self, file):
         file.write('\tcall ')
@@ -460,6 +469,7 @@ class Call:
 
         return comment
 
+
 class Path:
     def __init__(self):
         self.id = None
@@ -498,6 +508,7 @@ class Path:
             call.dump(file)
 
         file.write('\n')
+
 
 class Graph:
     def __init__(self, parent, model):
@@ -571,7 +582,7 @@ class Graph:
             value = self.values_by_id[id]
             value.ref_count += 1
 
-        calls = [ input_call, output_call ]
+        calls = [input_call, output_call]
 
         for node in self.proto.node:
             call = Call()
@@ -595,8 +606,8 @@ class Graph:
 
         # make dependency (call.input_calls, output_calls)
         for call in calls:
-            input_missing = [ *call.inputs ]
-            output_missing = [ *call.outputs ]
+            input_missing = [*call.inputs]
+            output_missing = [*call.outputs]
 
             # find from initializers
             input_missing[:] = itertools.filterfalse(lambda id: id < len(self.initializer_names), input_missing)
@@ -645,7 +656,7 @@ class Graph:
         # garbage collection
         for call in calls[2:]:  # ignore input_call and output_call
             for id in call.outputs:
-                if id in self.inputs or id in self.outputs: # ignore input values and output values
+                if id in self.inputs or id in self.outputs:  # ignore input values and output values
                     continue
 
                 value = self.values_by_id[id]
@@ -667,7 +678,7 @@ class Graph:
         output_path.fill_backword(output_call)
         paths[output_path.calls[0]] = output_path
 
-        unresolved = [ input_path ]
+        unresolved = [input_path]
 
         # make path's input/output relationship
         while len(unresolved) > 0:
@@ -693,7 +704,7 @@ class Graph:
         # order paths
         input_path.id = len(self.paths)
         self.paths.append(input_path)
-        unresolved = [ *input_path.output_paths ]
+        unresolved = [*input_path.output_paths]
 
         while len(unresolved) > 0:
             path = unresolved[0]
@@ -749,12 +760,12 @@ class Graph:
         file.write('\n')
 
         # write initializer.db
-        index = [ 0 ]
+        index = [0]
         with open(output_dir + os.path.sep + 'init.db', 'wb') as fp:
             for initializer in self.initializer_names:
                 value = self.values[initializer]
                 if value.type == 'null':
-                    length = fp.write(np.array([ 0 ], np.uint32).tobytes())
+                    length = fp.write(np.array([0], np.uint32).tobytes())
                     index.append(index[-1] + length)
                 elif value.type == 'tensor':
                     length = fp.write(encode_tensor(value.proto))
@@ -767,7 +778,7 @@ class Graph:
         # write initializer.idx
         with open(output_dir + os.path.sep + 'init.idx', 'wb') as fp:
             for offset in index:
-                fp.write(np.array([ offset ], np.uint32).tobytes())
+                fp.write(np.array([offset], np.uint32).tobytes())
 
         del index
 
@@ -810,6 +821,7 @@ class Graph:
             if len(path.output_paths) == 0:
                 file.write(str(path.id) + ' ')
         file.write('\n')
+
 
 class Model():
     def __init__(self, model):
@@ -935,16 +947,16 @@ class Model():
                     offset += file.write(np.zeros(pad, np.uint8).tobytes())
 
             for attr in self.attributes:
-                
+
                 if attr.type == onnx.AttributeProto.UNDEFINED:
                     index.append(offset)
-                    write(np.array([ 0 ], np.uint32).tobytes(), 4)
+                    write(np.array([0], np.uint32).tobytes(), 4)
                 elif attr.type == onnx.AttributeProto.FLOAT:
                     index.append(offset)
-                    write(np.array([ attr.f ], np.float32).tobytes(), 4)
+                    write(np.array([attr.f], np.float32).tobytes(), 4)
                 elif attr.type == onnx.AttributeProto.INT:
                     index.append(offset)
-                    write(np.array([ attr.i ], np.int32).tobytes(), 4)
+                    write(np.array([attr.i], np.int32).tobytes(), 4)
                 elif attr.type == onnx.AttributeProto.STRING:
                     index.append(offset)
 
@@ -965,7 +977,7 @@ class Model():
                     index.append(offset)
 
                     # write length
-                    write(np.array([ len(attr.floats) ], np.uint32).tobytes(), 4)
+                    write(np.array([len(attr.floats)], np.uint32).tobytes(), 4)
 
                     # write array
                     write(np.array(attr.floats, np.float32).tobytes(), 4)
@@ -973,7 +985,7 @@ class Model():
                     index.append(offset)
 
                     # write length
-                    write(np.array([ len(attr.ints) ], np.uint32).tobytes(), 4)
+                    write(np.array([len(attr.ints)], np.uint32).tobytes(), 4)
 
                     # write array
                     write(np.array(attr.ints, np.int32).tobytes(), 4)
@@ -981,7 +993,7 @@ class Model():
                     index.append(offset)
 
                     # write length
-                    write(np.array([ len(attr.strings) ], np.uint32).tobytes(), 4)
+                    write(np.array([len(attr.strings)], np.uint32).tobytes(), 4)
 
                     sub_offset = 4 + len(attr.string) * 4
                     sub_offsets = []
@@ -999,7 +1011,7 @@ class Model():
 
                     # write index
                     for off in sub_offsets:
-                        write(np.array([ off ], np.uint32).tobytes(), 4)
+                        write(np.array([off], np.uint32).tobytes(), 4)
 
                     # write strings
                     for buf in sub_buf:
@@ -1024,12 +1036,16 @@ class Model():
 
         return text
 
+
 def main():
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
-    parser.add_argument('onnx', metavar='onnx or pb', type=argparse.FileType('rb'), nargs='+', help='an input ONNX model')
+    parser.add_argument('onnx', metavar='onnx or pb', type=argparse.FileType('rb'), nargs='+',
+                        help='an input ONNX model')
     parser.add_argument('-o', metavar='output', type=str, nargs='?', help='output directory(default is out)')
-    parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'], help='output comments(true or false)')
-    parser.add_argument('-align', metavar='align', type=str, nargs='?', choices=['gcc'], help='attribute alignment rule')
+    parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'],
+                        help='output comments(true or false)')
+    parser.add_argument('-align', metavar='align', type=str, nargs='?', choices=['gcc'],
+                        help='attribute alignment rule')
 
     # parse args
     args = parser.parse_args()
@@ -1045,10 +1061,10 @@ def main():
 
     # alignment rule
     global alignof
-    alignof = alignof_gcc;
+    alignof = alignof_gcc
 
     if args.align == 'gcc':
-        alignof = alignof_gcc;
+        alignof = alignof_gcc
 
     for file in args.onnx:
         # parse onnx file
@@ -1059,7 +1075,7 @@ def main():
             except:
                 print('Illegal ONNX file format:', file.name)
                 return
-            
+
             model = Model(onnx_model)
             model.dump(output_dir)
         # parse pb file
@@ -1078,6 +1094,7 @@ def main():
         else:
             print('Not supported file format:', file.name)
             return
+
 
 if __name__ == '__main__':
     main()
