@@ -6,6 +6,8 @@ import numpy as np
 import onnx
 from onnx import numpy_helper
 
+from normalizer import normalize
+
 is_output_comment = True
 encoding = 'little'
 alignof = None
@@ -138,169 +140,6 @@ def find_gc_call(call, id, ref_count):
     raise Exception(
         'Cannot find GC call for value: ' + str(id) + ' (# of candidate paths: ' + str(len(candidates)) + ')')
 
-
-def normalize_attributes(op, attrs):
-    def get_attr(name):
-        for attr in attrs:
-            if attr.name == name:
-                return attr
-
-        return None
-
-    def attr_int(name, value):
-        attr = get_attr(name)
-        if attr is not None:
-            return attr
-
-        attr = onnx.AttributeProto()
-        attr.name = name
-        attr.type = onnx.AttributeProto.INT
-        attr.i = value
-
-        return attr
-
-    def attr_float(name, value):
-        attr = get_attr(name)
-        if attr is not None:
-            return attr
-
-        attr = onnx.AttributeProto()
-        attr.name = name
-        attr.type = onnx.AttributeProto.FLOAT
-        attr.f = value
-
-        return attr
-
-    def attr_string(name, value):
-        attr = get_attr(name)
-        if attr is not None:
-            return attr
-
-        attr = onnx.AttributeProto()
-        attr.name = name
-        attr.type = onnx.AttributeProto.STRING
-        attr.s = value.encode()
-
-        return attr
-
-    def attr_ints(name, value):
-        attr = get_attr(name)
-        if attr is not None:
-            return attr
-
-        attr = onnx.AttributeProto()
-        attr.name = name
-        attr.type = onnx.AttributeProto.INTS
-
-        if type(value) is int:
-            for i in range(len(value)):
-                attr.ints.append(0)
-        else:
-            for v in value:
-                attr.ints.append(v)
-
-        return attr
-
-    def attr_floats(name, value):
-        attr = get_attr(name)
-        if attr is not None:
-            return attr
-
-        attr = onnx.AttributeProto()
-        attr.name = name
-        attr.type = onnx.AttributeProto.FLOATS
-
-        if type(value) is int:
-            for i in range(len(value)):
-                attr.floats.append(0.0)
-        else:
-            for v in value:
-                attr.floats.append(v)
-
-        return attr
-
-    def attr_strings(name, value):
-        attr = get_attr(name)
-        if attr is not None:
-            return attr
-
-        attr = onnx.AttributeProto()
-        attr.name = name
-        attr.type = onnx.AttributeProto.STRINGS
-
-        if type(value) is int:
-            for i in range(len(value)):
-                attr.strings.append(''.encode())
-        else:
-            for v in value:
-                attr.strings.append(v.encode())
-
-        return attr
-
-    def attr_null(name):
-        attr = get_attr(name)
-        if attr is not None:
-            return attr
-
-        attr = onnx.AttributeProto()
-        attr.name = name
-        attr.type = onnx.AttributeProto.STRINGS
-
-        return attr
-
-    result = []
-
-    if op == 'Conv':
-        kernel_shape = get_attr('kernel_shape')
-
-        auto_pad = attr_string('auto_pad', 'NOTSET')
-        result.append(auto_pad)
-
-        result.append(attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
-        result.append(attr_int('group', 1))
-        result.append(kernel_shape)
-
-        pads = attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32))
-        result.append(pads)
-        if auto_pad.s == 'VALID':
-            for i in range(len(kernel_shape.ints) * 2):
-                auto_pad.ints[i] = 0
-
-        result.append(attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
-    elif op == 'MaxPool':
-        kernel_shape = get_attr('kernel_shape')
-
-        auto_pad = attr_string('auto_pad', 'NOTSET')
-        result.append(auto_pad)
-
-        result.append(attr_int('ceil_mode', 0))
-        result.append(attr_ints('dilations', np.ones(len(kernel_shape.ints), np.int32)))
-        result.append(kernel_shape)
-
-        pads = attr_ints('pads', np.zeros(len(kernel_shape.ints) * 2, np.int32))
-        result.append(pads)
-        if auto_pad.s == 'VALID':
-            for i in range(len(kernel_shape.ints) * 2):
-                auto_pad.ints[i] = 0
-
-        result.append(attr_int('storage_order', 0))
-        result.append(attr_ints('strides', np.zeros(len(kernel_shape.ints) * 2, np.int32)))
-    elif op == 'BatchNormalization':
-        result.append(attr_int('epsilon', 0.00001))
-        result.append(attr_int('momentum', 0.9))
-    elif op == 'Resize':
-        result.append(attr_string('coordinate_transformation_mode', 'half_pixel'))
-        result.append(attr_float('cubic_coeff_a', -0.75))
-        result.append(attr_int('exclude_outside', 0))
-        result.append(attr_float('extrapolation_value', 0.0))
-        result.append(attr_string('mode', 'nearest'))
-        result.append(attr_string('nearest_mode', 'round_prefer_floor'))
-    elif op == 'NonMaxSuppression':
-        result.append(attr_int('center_point_box', 0))
-    elif op == 'Cast':
-        result.append(attr_int('to', 0))
-
-    return result
 
 
 class Value:
@@ -589,7 +428,7 @@ class Graph:
                 value.ref_count += 1
                 call.inputs.append(value.id)
 
-            attrs = normalize_attributes(node.op_type, node.attribute)
+            attrs = normalize(node.op_type, node.attribute)
             for attr in attrs:
                 call.attributes.append(self.parent.alloc_attribute(attr))
 
