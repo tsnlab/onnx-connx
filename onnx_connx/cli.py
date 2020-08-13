@@ -5,6 +5,7 @@ import os
 import numpy as np
 import onnx
 from onnx import numpy_helper
+from normalizer import normalize
 
 from normalizer import normalize
 
@@ -139,8 +140,6 @@ def find_gc_call(call, id, ref_count):
 
     raise Exception(
         'Cannot find GC call for value: ' + str(id) + ' (# of candidate paths: ' + str(len(candidates)) + ')')
-
-
 
 class Value:
     def __init__(self):
