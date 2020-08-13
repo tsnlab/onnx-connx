@@ -153,7 +153,7 @@ _normalizers['NonMaxSuppression'] = (
     'center_point_box', 'int', 0,
 )
 
-_normalizers['ReduceMean'] = (
+_normalizers['ReduceMin'] = (
     'axes', 'ints', None,
     'keepdims', 'int', 0,
 )
@@ -264,7 +264,4 @@ def normalize(op, attrs):
         if result[i] is None:
             result[i] = create_attr_null(normalizer[i * 3])
 
-    print('*****', op)
-    for attr in result:
-        print(attr)
     return result
