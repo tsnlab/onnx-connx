@@ -30,12 +30,8 @@ def create_attr_ints(name, value):
     attr.name = name
     attr.type = onnx.AttributeProto.INTS
 
-    if type(value) is int:
-        for i in range(len(value)):
-            attr.ints.append(0)
-    else:
-        for v in value:
-            attr.ints.append(v)
+    for v in value:
+        attr.ints.append(v)
 
     return attr
 
@@ -44,12 +40,8 @@ def create_attr_floats(name, value):
     attr.name = name
     attr.type = onnx.AttributeProto.FLOATS
 
-    if type(value) is int:
-        for i in range(len(value)):
-            attr.floats.append(0.0)
-    else:
-        for v in value:
-            attr.floats.append(v)
+    for v in value:
+        attr.floats.append(v)
 
     return attr
 
@@ -58,12 +50,8 @@ def create_attr_strings(name, value):
     attr.name = name
     attr.type = onnx.AttributeProto.STRINGS
 
-    if type(value) is int:
-        for i in range(len(value)):
-            attr.strings.append(''.encode())
-    else:
-        for v in value:
-            attr.strings.append(v.encode())
+    for v in value:
+        attr.strings.append(v.encode())
 
     return attr
 
@@ -115,6 +103,7 @@ _normalizers['Conv'] = (
     'group', 'int', 1,
     'kernel_shape', 'ints', None,
     'pads', 'ints', lambda attrs: np.ones(len(attrs[3].ints) * 2, np.int32),
+    'strides', 'ints', lambda attrs: np.ones(len(attrs[3].ints), np.int32),
     _valid_pad
 )
 
