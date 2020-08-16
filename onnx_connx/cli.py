@@ -1,39 +1,14 @@
+import os
 import argparse
 import itertools
-import os
 
 import numpy as np
 import onnx
 from onnx import numpy_helper
 from normalizer import normalize
+from config import Config
 
-from normalizer import normalize
-
-is_output_comment = True
-encoding = 'little'
-alignof = None
-
-
-def alignof_gcc(offset, size):
-    if size == 0:
-        size = 4  # Check x86 vs x86_64
-
-    return (size - (offset % size)) % size
-
-
-def get_output_dir(path):
-    if path is None:
-        path = 'out'
-
-    try:
-        if not os.path.exists(path):
-            os.makedirs(path)
-    except OSError:
-        print('Cannot make output directory:', path)
-        return None
-
-    return path
-
+config = Config()
 
 def encode_tensor(tensor):
     buf = bytearray()
@@ -59,7 +34,8 @@ def find_gc_call(call, id, ref_count):
     """
     Find gargage collection call for value id
     :param call: A call which created the value
-    :param call: value id which is created by the call
+    :param id: value id which is created by the call
+    :param ref_count: reference count of the value
     :return: gc call which has responsible to delete the value
     """
 
@@ -239,7 +215,7 @@ class Call:
         for attr in self.attributes:
             file.write(str(attr) + ' ')
 
-        if is_output_comment and self.proto is not None:
+        if config.output_comment and self.proto is not None:
             file.write('# ')
 
             file.write(' '.join(self.proto.output) + ' ')
@@ -326,7 +302,7 @@ class Path:
             else:
                 call = None
 
-    def dump(self, output_dir, file):
+    def dump(self, file):
         file.write('path ' + str(self.id) + '\n')
         file.write('\tinput_paths ' + ' '.join(str(path.id) for path in self.input_paths) + '\n')
         file.write('\toutput_paths ' + ' '.join(str(path.id) for path in self.output_paths) + '\n')
@@ -589,11 +565,11 @@ class Graph:
 
             return value
 
-    def dump(self, output_dir, file):
-        global is_output_comment
+    def dump(self, file):
+        global config
 
         file.write('initializers ' + str(1 + len(self.proto.initializer) + len(self.proto.sparse_initializer)))
-        if is_output_comment:
+        if config.output_comment:
             file.write(' # ')
 
             file.write('null ')
@@ -608,7 +584,7 @@ class Graph:
 
         # write initializer.db
         index = [0]
-        with open(output_dir + os.path.sep + 'init.db', 'wb') as fp:
+        with open(config.output_path + os.path.sep + 'init.db', 'wb') as fp:
             for initializer in self.initializer_names:
                 value = self.values[initializer]
                 if value.type == 'null':
@@ -623,7 +599,7 @@ class Graph:
         del index[-1]
 
         # write initializer.idx
-        with open(output_dir + os.path.sep + 'init.idx', 'wb') as fp:
+        with open(config.output_path + os.path.sep + 'init.idx', 'wb') as fp:
             for offset in index:
                 fp.write(np.array([offset], np.uint32).tobytes())
 
@@ -633,7 +609,7 @@ class Graph:
         if len(self.values) > 0:
             file.write('variables ' + str(len(self.values) - len(self.initializer_names)))
 
-            if is_output_comment:
+            if config.output_comment:
                 file.write(' # ')
 
                 for key, value in self.values.items():
@@ -652,9 +628,9 @@ class Graph:
         file.write('\n')
 
         for path in self.paths:
-            path.dump(output_dir, file)
+            path.dump(file)
 
-        if is_output_comment:
+        if config.output_comment:
             file.write('# run\n')
 
         file.write('start ')
@@ -683,10 +659,10 @@ class Model():
 
         self.graph.init()
 
-    def dump(self, output_dir):
-        global is_output_comment
+    def dump(self):
+        global config
 
-        file = open(output_dir + os.path.sep + 'main.cnx', 'w')
+        file = open(config.output_path + os.path.sep + 'main.cnx', 'w')
 
         file.write('opset ')
         opset_ver = -1
@@ -696,11 +672,11 @@ class Model():
         file.write(str(opset_ver) + ' ')
         file.write('\n')
 
-        self.graph.dump(output_dir, file)
+        self.graph.dump(file)
 
         file.close()
 
-        self.dump_attributes(output_dir)
+        self.dump_attributes()
 
     def has_attribute(self, attr):
         for i in range(len(self.attributes)):
@@ -771,24 +747,26 @@ class Model():
         self.attributes.append(attr)
         return id
 
-    def dump_attributes(self, output_dir):
+    def dump_attributes(self):
+        global config
+
         index = []
 
         # write data
-        with open(output_dir + os.path.sep + 'attr.db', 'wb') as file:
+        with open(config.output_path + os.path.sep + 'attr.db', 'wb') as file:
             offset = 0
 
             def write(buf, size):
                 nonlocal offset
                 nonlocal file
 
-                pad = alignof(offset, size)
+                pad = config.alignof(offset, size)
                 if pad > 0:
                     offset += file.write(np.zeros(pad, np.uint8).tobytes())
 
                 offset += file.write(buf)
 
-                pad = alignof(offset, 0)
+                pad = config.padof(offset, size)
                 if pad > 0:
                     offset += file.write(np.zeros(pad, np.uint8).tobytes())
 
@@ -872,7 +850,7 @@ class Model():
                     raise Exception('Illegal attribute type: ' + str(attr.type))
 
         # write index
-        np.array(index, np.uint32).tofile(output_dir + os.path.sep + 'attr.idx')
+        np.array(index, np.uint32).tofile(config.output_path + os.path.sep + 'attr.idx')
 
     def encode_attr(self, attr):
         text = str(attr.type) + ' '
@@ -887,31 +865,29 @@ def main():
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
     parser.add_argument('onnx', metavar='onnx or pb', type=argparse.FileType('rb'), nargs='+',
                         help='an input ONNX model')
+    parser.add_argument('-p', metavar='profile', type=str, nargs='?', help='specify configuration file')
     parser.add_argument('-o', metavar='output', type=str, nargs='?', help='output directory(default is out)')
     parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'],
                         help='output comments(true or false)')
-    parser.add_argument('-align', metavar='align', type=str, nargs='?', choices=['gcc'],
-                        help='attribute alignment rule')
 
     # parse args
     args = parser.parse_args()
 
-    # comment option
-    global is_output_comment
-    is_output_comment = args.c is None or args.c == 'true' or args.c == 'True'
+    # config
+    global config
 
-    # mkdir output_dir
-    output_dir = get_output_dir(args.o)
-    if output_dir is None:
-        return
+    if args.p is not None:
+        config.read(args.p)
 
-    # alignment rule
-    global alignof
-    alignof = alignof_gcc
+    if args.o is not None:
+        config.set_output_path(args.o)
 
-    if args.align == 'gcc':
-        alignof = alignof_gcc
+    if args.c is not None:
+        config.set_output_comment(args.c)
 
+    config.make_output_path()
+
+    # read onnx and pb
     for file in args.onnx:
         # parse onnx file
         if file.name.endswith('.onnx'):
@@ -923,7 +899,7 @@ def main():
                 return
 
             model = Model(onnx_model)
-            model.dump(output_dir)
+            model.dump()
         # parse pb file
         elif file.name.endswith('.pb'):
             tensor_model = None
@@ -935,7 +911,7 @@ def main():
 
             buf = encode_tensor(tensor_model)
             basename = os.path.basename(file.name)
-            with open(output_dir + os.path.sep + basename[:-3] + '.tensor', 'wb') as fp:
+            with open(config.output_path + os.path.sep + basename[:-3] + '.tensor', 'wb') as fp:
                 fp.write(buf)
         else:
             print('Not supported file format:', file.name)
