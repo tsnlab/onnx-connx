@@ -1,12 +1,13 @@
 import os
+import glob
 import argparse
 import itertools
 
 import numpy as np
 import onnx
 from onnx import numpy_helper
-from normalizer import normalize
-from config import Config
+from .normalizer import normalize
+from .config import Config
 
 config = Config()
 
@@ -861,17 +862,24 @@ class Model():
         return text
 
 
-def main():
+def main(*args: object) -> object:
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
-    parser.add_argument('onnx', metavar='onnx or pb', type=argparse.FileType('rb'), nargs='+',
-                        help='an input ONNX model')
+    parser.add_argument('onnx', metavar='onnx or pb', nargs='+', help='an input ONNX model')
     parser.add_argument('-p', metavar='profile', type=str, nargs='?', help='specify configuration file')
     parser.add_argument('-o', metavar='output', type=str, nargs='?', help='output directory(default is out)')
     parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'],
                         help='output comments(true or false)')
 
     # parse args
-    args = parser.parse_args()
+    if len(args) > 0:
+        args = parser.parse_args(args)
+    else:
+        args = parser.parse_args()
+
+    inputs = []
+    for path in args.onnx:
+        for p in glob.glob(path):
+            inputs.append(open(p, 'rb'))
 
     # config
     global config
@@ -888,7 +896,7 @@ def main():
     config.make_output_path()
 
     # read onnx and pb
-    for file in args.onnx:
+    for file in inputs:
         # parse onnx file
         if file.name.endswith('.onnx'):
             onnx_model = None

@@ -3,13 +3,13 @@
 all: mnist mobilenet yolo-tiny
 
 mnist:
-	python onnx_connx/cli.py examples/mnist/* -o out/mnist
+	python -m onnx_connx.cli examples/mnist/* -o out/mnist
 
 mobilenet:
-	python onnx_connx/cli.py examples/mobilenet/* -o out/mobilenet
+	python -m onnx_connx.cli examples/mobilenet/* -o out/mobilenet
 
 yolo-tiny:
-	python onnx_connx/cli.py examples/yolo-tiny/* -o out/yolo-tiny
+	python -m onnx_connx.cli examples/yolo-tiny/* -o out/yolo-tiny
 
 clean:
 	rm -rf out
