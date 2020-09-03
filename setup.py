@@ -5,7 +5,9 @@ from setuptools import setup
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
-__version__ = subprocess.run(['git', 'describe', '--tags', '--long'], stdout=subprocess.PIPE, cwd=cwd).stdout.decode('utf-8')[1:]
+__version_raw = subprocess.run(['git', 'describe', '--tags', '--long'], stdout=subprocess.PIPE, cwd=cwd).stdout.decode('utf-8')[1:]
+__versions = __version_raw.split('-')
+__version__ = __versions[0] + '.' + __versions[1]
 
 setup(name='onnx-connx',
       version=__version__,
@@ -17,6 +19,7 @@ setup(name='onnx-connx',
       install_requires=[
           'onnx>=1.7.0'
       ],
+      tests_require=['pytest'],
       entry_points={
           'console_scripts': [
               'onnx2connx=onnx_connx.cli:main',
