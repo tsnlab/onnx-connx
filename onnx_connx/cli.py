@@ -566,9 +566,10 @@ class Graph:
 
             return value
 
-    def dump(self, file):
+    def dump(self, init_base, value_base, file):
         global config
 
+        # initializers
         file.write('initializers ' + str(1 + len(self.proto.initializer) + len(self.proto.sparse_initializer)))
         if config.output_comment:
             file.write(' # ')
@@ -582,29 +583,6 @@ class Graph:
                 file.write(initializer.name + ' ')
 
         file.write('\n')
-
-        # write initializer.db
-        index = [0]
-        with open(config.output_path + os.path.sep + 'init.db', 'wb') as fp:
-            for initializer in self.initializer_names:
-                value = self.values[initializer]
-                if value.type == 'null':
-                    length = fp.write(np.array([0], np.uint32).tobytes())
-                    index.append(index[-1] + length)
-                elif value.type == 'tensor':
-                    length = fp.write(encode_tensor(value.proto))
-                    index.append(index[-1] + length)
-                else:
-                    raise Exception('value type ' + value.type + ' is not supported yet')
-
-        del index[-1]
-
-        # write initializer.idx
-        with open(config.output_path + os.path.sep + 'init.idx', 'wb') as fp:
-            for offset in index:
-                fp.write(np.array([offset], np.uint32).tobytes())
-
-        del index
 
         # variables
         if len(self.values) > 0:
@@ -646,37 +624,64 @@ class Graph:
                 file.write(str(path.id) + ' ')
         file.write('\n')
 
+    def dump_init(self, fp_db, fp_idx):
+        for initializer in self.initializer_names:
+            # write init.idx
+            fp_idx.write(np.array([fp_db.tell()], np.uint32).tobytes())
+
+            # write init.db
+            value = self.values[initializer]
+            if value.type == 'null':
+                fp_db.write(np.array([0], np.uint32).tobytes())
+            elif value.type == 'tensor':
+                fp_db.write(encode_tensor(value.proto))
+            else:
+                raise Exception('value type ' + value.type + ' is not supported yet')
+
 
 class Model:
     def __init__(self, model):
         self.proto = model
-        self.graph = Graph(self, model.graph)
+        self.graphs = [Graph(self, model.graph)]
         self.attributes = []
 
+        # add null attribute
         null_attr = onnx.AttributeProto()
         null_attr.name = 'null'
         null_attr.type = onnx.AttributeProto.UNDEFINED
         self.attributes.append(null_attr)
 
-        self.graph.init()
+    def init(self):
+        for graph in self.graphs:
+            graph.init()
 
     def dump(self):
         global config
 
-        file = open(config.output_path + os.path.sep + 'main.cnx', 'w')
+        init_base = 0
+        value_base = 0
 
-        file.write('opset ')
-        opset_ver = -1
-        for opset in self.proto.opset_import:
-            if opset.version > opset_ver:
-                opset_ver = opset.version
-        file.write(str(opset_ver) + ' ')
-        file.write('\n')
+        init_db = open(config.output_path + os.path.sep + 'init.db', 'wb')
+        init_idx = open(config.output_path + os.path.sep + 'init.idx', 'wb')
 
-        self.graph.dump(file)
+        for graph in self.graphs:
+            # dump connx file
+            with open(config.output_path + os.path.sep + 'main.cnx', 'w') as fp:
+                fp.write('opset ')
+                opset_ver = -1
+                for opset in self.proto.opset_import:
+                    if opset.version > opset_ver:
+                        opset_ver = opset.version
+                fp.write(str(opset_ver) + ' ')
+                fp.write('\n')
 
-        file.close()
+                graph.dump(init_base, value_base, fp)
+                graph.dump_init(init_db, init_idx)
 
+        init_db.close()
+        init_idx.close()
+
+        # dump attributes
         self.dump_attributes()
 
     def has_attribute(self, attr):
@@ -901,6 +906,7 @@ def main(*_args: str) -> object:
                 return
 
             model = Model(onnx_model)
+            model.init()
             model.dump()
         # parse pb file
         elif file.name.endswith('.pb'):
