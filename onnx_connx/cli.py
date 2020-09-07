@@ -1,7 +1,9 @@
+from __future__ import annotations
 import os
 import glob
 import argparse
 import itertools
+from typing import List
 
 import numpy as np
 import onnx
@@ -10,6 +12,7 @@ from .normalizer import normalize
 from .config import Config
 
 config = Config()
+
 
 def encode_tensor(tensor):
     buf = bytearray()
@@ -30,93 +33,6 @@ def encode_tensor(tensor):
 
     return buf
 
-
-def find_gc_call(call, id, ref_count):
-    """
-    Find gargage collection call for value id
-    :param call: A call which created the value
-    :param id: value id which is created by the call
-    :param ref_count: reference count of the value
-    :return: gc call which has responsible to delete the value
-    """
-
-    paths = [[next_call] for next_call in call.output_calls]
-    ref_counts = [0] * len(paths)
-    visited = {}
-
-    # make paths
-    i = 0
-    while i < len(paths):
-        path = paths[i]
-        last_call = path[-1]
-
-        if id in last_call.inputs:
-            ref_counts[i] += 1
-
-        if last_call in visited:  # don't extend but copy already extended one
-            org_path = visited[last_call]
-            idx = org_path.index(last_call)
-            path.extend(org_path[idx + 1:])
-            i += 1
-            continue
-
-        if (len(last_call.input_calls) > 1 or len(
-                last_call.output_calls) > 1) and last_call not in visited:  # Check the node is branch
-            visited[last_call] = path
-
-        if len(last_call.output_calls) == 0:  # end of graph
-            i += 1
-        else:
-            for j in range(len(last_call.output_calls)):
-                next_call = last_call.output_calls[j]
-                next_path = None
-
-                if j == 0:
-                    next_path = path
-                else:
-                    next_path = []
-                    paths.append(next_path)
-                    ref_counts.append(0)
-
-                next_path.append(next_call)
-
-    # prune paths which is not using the value
-    candidates = []
-    candidate_ref_counts = []
-    for i in range(len(paths)):
-        if ref_counts[i] > 0:
-            candidates.append(paths[i])
-            candidate_ref_counts.append(ref_counts[i])
-
-    if len(candidates) == 0:
-        raise Exception('There is no GC path for value: ' + str(id) + '(# of paths: ' + str(len(paths)) + ')')
-
-    # find gc call
-    if len(candidates) == 1:  # the last one of last input
-        for call2 in candidates[0]:
-            if id in call2.inputs:
-                ref_count -= 1
-
-            if ref_count == 0:
-                return call2
-    else:  # the last common call
-        length = min((len(path) for path in candidates))
-
-        last_common_call = None
-        path = candidates[0]
-        for i in range(length):
-            call2 = path[-(i + 1)]
-            for p in candidates[1:]:
-                if call2 != p[-(i + 1)]:
-                    break
-
-            last_common_call = call2
-
-        if last_common_call is not None:
-            return last_common_call
-
-    raise Exception(
-        'Cannot find GC call for value: ' + str(id) + ' (# of candidate paths: ' + str(len(candidates)) + ')')
 
 class Value:
     def __init__(self):
@@ -170,8 +86,93 @@ class Call:
         # set self.output_call = call
         self.output_calls = [call]
 
+    def find_gc_call(self, call_id: int, ref_count: int) -> Call:
+        """
+        Find garbage collection call for value id
+        :param call_id: value id which is created by the call
+        :param ref_count: reference count of the value
+        :return: gc call which has responsible to delete the value
+        """
+
+        paths = [[next_call] for next_call in self.output_calls]
+        ref_counts = [0] * len(paths)
+        visited = {}
+
+        # make paths
+        i = 0
+        while i < len(paths):
+            path = paths[i]
+            last_call = path[-1]
+
+            if call_id in last_call.inputs:
+                ref_counts[i] += 1
+
+            if last_call in visited:  # don't extend but copy already extended one
+                org_path = visited[last_call]
+                idx = org_path.index(last_call)
+                path.extend(org_path[idx + 1:])
+                i += 1
+                continue
+
+            if (len(last_call.input_calls) > 1 or len(
+                    last_call.output_calls) > 1) and last_call not in visited:  # Check the node is branch
+                visited[last_call] = path
+
+            if len(last_call.output_calls) == 0:  # end of graph
+                i += 1
+            else:
+                for j in range(len(last_call.output_calls)):
+                    next_call = last_call.output_calls[j]
+
+                    if j == 0:
+                        next_path = path
+                    else:
+                        next_path = []
+                        paths.append(next_path)
+                        ref_counts.append(0)
+
+                    next_path.append(next_call)
+
+        # prune paths which is not using the value
+        candidates = []
+        candidate_ref_counts = []
+        for i in range(len(paths)):
+            if ref_counts[i] > 0:
+                candidates.append(paths[i])
+                candidate_ref_counts.append(ref_counts[i])
+
+        if len(candidates) == 0:
+            raise Exception('There is no GC path for value: ' + str(call_id) + '(# of paths: ' + str(len(paths)) + ')')
+
+        # find gc call
+        if len(candidates) == 1:  # the last one of last input
+            for call2 in candidates[0]:
+                if call_id in call2.inputs:
+                    ref_count -= 1
+
+                if ref_count == 0:
+                    return call2
+        else:  # the last common call
+            length = min((len(path) for path in candidates))
+
+            last_common_call = None
+            path = candidates[0]
+            for i in range(length):
+                call2 = path[-(i + 1)]
+                for p in candidates[1:]:
+                    if call2 != p[-(i + 1)]:
+                        break
+
+                last_common_call = call2
+
+            if last_common_call is not None:
+                return last_common_call
+
+        raise Exception(
+            'Cannot find GC call for value: ' + str(call_id) + ' (# of candidate paths: ' + str(len(candidates)) + ')')
+
     def name(self):
-        if self.proto == None:
+        if self.proto is None:
             if len(self.output_calls) != 0 and len(self.input_calls) == 0:
                 return 'input ' + str(self.outputs)
             elif len(self.output_calls) == 0 and len(self.input_calls) != 0:
@@ -203,18 +204,18 @@ class Call:
         file.write(str(len(self.inputs)) + ' ')
         file.write(str(len(self.attributes)) + '  ')
 
-        for output in self.outputs:
-            file.write(str(output) + ' ')
+        for output_id in self.outputs:
+            file.write(str(output_id) + ' ')
 
         file.write(' ')
 
-        for input in self.inputs:
-            file.write(str(input) + ' ')
+        for input_id in self.inputs:
+            file.write(str(input_id) + ' ')
 
         file.write(' ')
 
-        for attr in self.attributes:
-            file.write(str(attr) + ' ')
+        for attr_id in self.attributes:
+            file.write(str(attr_id) + ' ')
 
         if config.output_comment and self.proto is not None:
             file.write('# ')
@@ -366,15 +367,15 @@ class Graph:
             self.initializer_names.append(value.name)
 
         # set graph's inputs and outputs
-        for input in self.proto.input:
-            if input.name in self.initializer_names:
+        for input_proto in self.proto.input:
+            if input_proto.name in self.initializer_names:
                 continue
 
-            value = self.get_value(input.name)
+            value = self.get_value(input_proto.name)
             self.inputs.append(value.id)
 
-        for output in self.proto.output:
-            value = self.get_value(output.name)
+        for output_proto in self.proto.output:
+            value = self.get_value(output_proto.name)
             self.outputs.append(value.id)
 
         self.schedule()
@@ -386,8 +387,8 @@ class Graph:
 
         output_call = Call()
         output_call.inputs.extend(self.outputs)
-        for id in self.outputs:
-            value = self.values_by_id[id]
+        for output_id in self.outputs:
+            value = self.values_by_id[output_id]
             value.ref_count += 1
 
         calls = [input_call, output_call]
@@ -395,12 +396,12 @@ class Graph:
         for node in self.proto.node:
             call = Call()
 
-            for output in node.output:
-                value = self.get_value(output)
+            for output_name in node.output:
+                value = self.get_value(output_name)
                 call.outputs.append(value.id)
 
-            for input in node.input:
-                value = self.get_value(input)
+            for input_name in node.input:
+                value = self.get_value(input_name)
                 value.ref_count += 1
                 call.inputs.append(value.id)
 
@@ -414,12 +415,12 @@ class Graph:
 
         # make dependency (call.input_calls, output_calls)
         for call in calls:
-            input_missing = [*call.inputs]
-            output_missing = [*call.outputs]
+            input_missing: List[int] = [*call.inputs]
+            output_missing: List[int] = [*call.outputs]
 
             # find from initializers
-            input_missing[:] = itertools.filterfalse(lambda id: id < len(self.initializer_names), input_missing)
-            output_missing[:] = itertools.filterfalse(lambda id: id < len(self.initializer_names), output_missing)
+            input_missing[:] = itertools.filterfalse(lambda _id: _id < len(self.initializer_names), input_missing)
+            output_missing[:] = itertools.filterfalse(lambda _id: _id < len(self.initializer_names), output_missing)
 
             # find from calls
             for call2 in calls:
@@ -428,7 +429,7 @@ class Graph:
 
                 # check input dependency
                 old_input_len = len(input_missing)
-                input_missing[:] = itertools.filterfalse(lambda id: id in call2.outputs, input_missing)
+                input_missing[:] = itertools.filterfalse(lambda _id: _id in call2.outputs, input_missing)
 
                 if old_input_len != len(input_missing):
                     if call not in call2.output_calls:
@@ -439,7 +440,7 @@ class Graph:
 
                 # check output dependency
                 old_output_len = len(output_missing)
-                output_missing[:] = itertools.filterfalse(lambda id: id in call2.inputs, output_missing)
+                output_missing[:] = itertools.filterfalse(lambda _id: _id in call2.inputs, output_missing)
 
                 if old_output_len != len(output_missing):
                     if call2 not in call.output_calls:
@@ -453,8 +454,8 @@ class Graph:
                 raise Exception('Cannot find input dependency for call ' + call.name() + ': ' + str(input_missing))
 
             if len(output_missing) > 0:
-                for orphant_id in output_missing:
-                    print('WARN: orphant output:', orphant_id, self.values_by_id[orphant_id].name)
+                for orphan_id in output_missing:
+                    print('WARN: orphan output:', orphan_id, self.values_by_id[orphan_id].name)
 
         # make dependency (input_call -> call input only initializers)
         for call in calls[1:]:  # ignore input_call itself
@@ -464,31 +465,32 @@ class Graph:
 
         # garbage collection
         for call in calls[2:]:  # ignore input_call and output_call
-            for id in call.outputs:
-                if id in self.inputs or id in self.outputs:  # ignore input values and output values
+            for call_id in call.outputs:
+                if call_id in self.inputs or call_id in self.outputs:  # ignore input values and output values
                     continue
 
-                value = self.values_by_id[id]
-                if value.ref_count == 0: # ignore orphant value
+                value = self.values_by_id[call_id]
+                if value.ref_count == 0:  # ignore orphan value
                     continue
 
-                gc_call = find_gc_call(call, id, value.ref_count)
+                gc_call = call.find_gc_call(call_id, value.ref_count)
 
-                if gc_call != None:
+                if gc_call is not None:
                     next_call = None
                     if len(gc_call.output_calls) == 1:
                         next_call = gc_call.output_calls[0]
 
                     if gc_call.proto is None and gc_call is not input_call and gc_call is not output_call:
                         # merge deletes
-                        gc_call.inputs.append(id)
-                    elif next_call is not None and next_call.proto is None and next_call is not input_call and next_call is not output_call:
+                        gc_call.inputs.append(call_id)
+                    elif next_call is not None and next_call.proto is None and next_call is not input_call and \
+                            next_call is not output_call:
                         # merge deletes
-                        next_call.inputs.append(id)
+                        next_call.inputs.append(call_id)
                     else:
                         # insert delete
                         delete_call = Call()
-                        delete_call.inputs.append(id)
+                        delete_call.inputs.append(call_id)
                         gc_call.insert_after(delete_call)
 
         # make paths
@@ -509,8 +511,6 @@ class Graph:
             path = unresolved[0]
 
             for next_call in path.calls[-1].output_calls:
-                next_path = None
-
                 if next_call in paths:
                     next_path = paths[next_call]
                 else:
@@ -647,7 +647,7 @@ class Graph:
         file.write('\n')
 
 
-class Model():
+class Model:
     def __init__(self, model):
         self.proto = model
         self.graph = Graph(self, model.graph)
@@ -699,7 +699,7 @@ class Model():
                 array = numpy_helper.to_array(attr.t)
                 array2 = numpy_helper.to_array(attr2.t)
 
-                if attr == attr2:
+                if array == array2:
                     return i
             elif attr.type == onnx.AttributeProto.GRAPH:
                 break
@@ -723,7 +723,7 @@ class Model():
                     array = numpy_helper.to_array(attr.tensors[j])
                     array2 = numpy_helper.to_array(attr2.tensors[j])
 
-                    if attr != attr2:
+                    if array != array2:
                         continue
 
                 return i
@@ -740,13 +740,14 @@ class Model():
         if attr.type == onnx.AttributeProto.UNDEFINED:
             return 0
 
-        id = self.has_attribute(attr)
-        if id >= 0:
-            return id
+        _id = self.has_attribute(attr)
+        if _id >= 0:
+            return _id
 
-        id = len(self.attributes)
+        _id = len(self.attributes)
         self.attributes.append(attr)
-        return id
+
+        return _id
 
     def dump_attributes(self):
         global config
@@ -757,17 +758,17 @@ class Model():
         with open(config.output_path + os.path.sep + 'attr.db', 'wb') as file:
             offset = 0
 
-            def write(buf, size):
+            def write(_buf, _size):
                 nonlocal offset
                 nonlocal file
 
-                pad = config.alignof(offset, size)
+                pad = config.alignof(offset, _size)
                 if pad > 0:
                     offset += file.write(np.zeros(pad, np.uint8).tobytes())
 
-                offset += file.write(buf)
+                offset += file.write(_buf)
 
-                pad = config.padof(offset, size)
+                pad = config.padof(offset, _size)
                 if pad > 0:
                     offset += file.write(np.zeros(pad, np.uint8).tobytes())
 
@@ -824,6 +825,8 @@ class Model():
                     sub_offsets = []
                     sub_buf = []
 
+                    align = 4
+
                     for s in attr.strings:
                         # write length
                         buf = bytearray(s)
@@ -853,16 +856,8 @@ class Model():
         # write index
         np.array(index, np.uint32).tofile(config.output_path + os.path.sep + 'attr.idx')
 
-    def encode_attr(self, attr):
-        text = str(attr.type) + ' '
-        id = len(self.attrributes)
-        self.attributes.append(attr)
-        text += str(id)
 
-        return text
-
-
-def main(*args: object) -> object:
+def main(*_args: str) -> object:
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
     parser.add_argument('onnx', metavar='onnx or pb', nargs='+', help='an input ONNX model')
     parser.add_argument('-p', metavar='profile', type=str, nargs='?', help='specify configuration file')
@@ -871,8 +866,8 @@ def main(*args: object) -> object:
                         help='output comments(true or false)')
 
     # parse args
-    if len(args) > 0:
-        args = parser.parse_args(args)
+    if len(_args) > 0:
+        args = parser.parse_args(_args)
     else:
         args = parser.parse_args()
 
@@ -899,10 +894,9 @@ def main(*args: object) -> object:
     for file in inputs:
         # parse onnx file
         if file.name.endswith('.onnx'):
-            onnx_model = None
             try:
                 onnx_model = onnx.load_model(file)
-            except:
+            except ValueError:
                 print('Illegal ONNX file format:', file.name)
                 return
 
@@ -910,10 +904,9 @@ def main(*args: object) -> object:
             model.dump()
         # parse pb file
         elif file.name.endswith('.pb'):
-            tensor_model = None
             try:
                 tensor_model = onnx.load_tensor(file)
-            except:
+            except ValueError:
                 print('Illegal protocol buffer format:', file.name)
                 return
 
