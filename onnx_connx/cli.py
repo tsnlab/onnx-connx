@@ -295,7 +295,7 @@ class Path:
             else:
                 call = None
 
-    def fill_backword(self, call):
+    def fill_backward(self, call):
         while call is not None:
             self.calls.insert(0, call)
 
@@ -501,7 +501,7 @@ class Graph:
         paths[input_call] = input_path
 
         output_path = Path()
-        output_path.fill_backword(output_call)
+        output_path.fill_backward(output_call)
         paths[output_path.calls[0]] = output_path
 
         unresolved = [input_path]
