@@ -1,7 +1,3 @@
-import sys
-import argparse
-import onnx
-
 class ConnxObject:
     def __init__(self, proto=None, parent=None):
         self.proto = proto
@@ -44,6 +40,11 @@ class ConnxGraphProto(ConnxObject):
     def dump(self, out, depth):
         self._tab(out, depth)
         out.write('GraphProto\n')
+
+        self._tab(out, depth + 1)
+        out.write('name ')
+        out.write(self.proto.name)
+        out.write('\n')
 
         self._tab(out, depth + 1)
         out.write('initializer\n')
@@ -151,6 +152,8 @@ class ConnxValueInfoProto(ConnxObject):
     def __init__(self, proto, parent):
         super().__init__(proto, parent)
 
+        self.type = ConnxTypeProto(proto.type, self)
+
     def dump(self, out, depth):
         self._tab(out, depth)
         out.write('ValueInfoProto\n')
@@ -159,6 +162,48 @@ class ConnxValueInfoProto(ConnxObject):
         out.write('name ')
         out.write(self.proto.name)
         out.write('\n')
+
+        self._tab(out, depth + 1)
+        out.write('type\n')
+        self.type.dump(out, depth + 2)
+
+
+class ConnxTypeProto(ConnxObject):
+    def __init__(self, proto, parent):
+        super().__init__(proto, parent)
+
+    def dump(self, out, depth):
+        self._tab(out, depth)
+        out.write('TypeProto\n')
+
+        self._tab(out, depth + 1)
+        out.write('value\n')
+        if self.proto.tensor_type != None:
+            tensor_type = self.proto.tensor_type
+
+            self._tab(out, depth + 2)
+            out.write('elem_type ')
+            out.write(ConnxTensorProto.DataType(tensor_type.elem_type))
+            out.write('\n')
+
+            self._tab(out, depth + 2)
+            out.write('shape ')
+            out.write(str(len(tensor_type.shape.dim)))
+
+            for i in range(len(tensor_type.shape.dim)):
+                dim = tensor_type.shape.dim[i]
+
+                if dim.dim_param != '':
+                    out.write(dim.dim_param)
+                else:
+                    out.write(str(dim.dim_value))
+                out.write(' ')
+
+            out.write('\n')
+        elif self.proto.sequence_type != None:
+            out.write('WARNING: sequence type is not supported')
+        elif self.proto.map_type != None:
+            out.write('WARNING: map type is not supported')
 
 
 class ConnxAttributeProto(ConnxObject):
@@ -178,6 +223,46 @@ class ConnxAttributeProto(ConnxObject):
         out.write('type ')
         out.write(ConnxAttributeProto.AttributeType(self.proto.type))
         out.write('\n')
+
+        self._tab(out, depth + 1)
+        if self.proto.type in [ 1, 2, 3, 6, 7, 8 ]:
+            out.write('value ')
+            out.write(str(self.value()))
+            out.write('\n')
+        else:
+            out.write('value\n')
+            self.value().dump(out, depth + 2)
+        
+
+    def value(self):
+        type = self.proto.type
+
+        if type == 1:
+            return self.proto.f
+        elif type == 2:
+            return self.proto.i
+        elif type == 3:
+            return self.proto.s
+        elif type == 4:
+            return ConnxTensorProto(self.proto.t, None)
+        elif type == 5:
+            return ConnxTensorProto(self.proto.g, None)
+        elif type == 11:
+            return ConnxTensorProto(self.proto.sparse_tensor, None)
+        elif type == 6:
+            return self.proto.floats
+        elif type == 7:
+            return self.proto.ints
+        elif type == 8:
+            return self.proto.strings
+        elif type == 9:
+            return [ ConnxTensorProto(self.proto.tensors[i]) for i in range(len(self.proto.tensors)) ]
+        elif type == 10:
+            return [ ConnxGraphProto(self.proto.graphs[i]) for i in range(len(self.proto.graphs)) ]
+        elif type == 12:
+            return [ ConnxSparseTensorProto(self.proto.sparse_tensors[i]) for i in range(len(self.proto.sparse_tensors)) ]
+        else:
+            return None
 
     def AttributeType(type):
         if type == 1:
@@ -246,29 +331,4 @@ class ConnxNodeProto(ConnxObject):
         out.write('attribute\n')
         for attribute in self.attribute:
             attribute.dump(out, depth + 2)
-
-
-def load_model(path) -> ConnxModelProto:
-    proto = onnx.load_model(path)
-    return ConnxModelProto(proto)
-
-def main(*_args: str) -> object:
-    parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
-    parser.add_argument('onnx', metavar='onnx or pb', nargs='+', help='an input ONNX model')
-    parser.add_argument('-p', metavar='profile', type=str, nargs='?', help='specify configuration file')
-    parser.add_argument('-o', metavar='output', type=str, nargs='?', help='output directory(default is out)')
-    parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'],
-                        help='output comments(true or false)')
-
-    # parse args
-    if len(_args) > 0:
-        args = parser.parse_args(_args)
-    else:
-        args = parser.parse_args()
-
-    model = load_model(args.onnx[0])
-    model.dump(sys.stdout, 0)
-
-if __name__ == '__main__':
-    main()
 
