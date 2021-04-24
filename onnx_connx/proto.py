@@ -1,6 +1,8 @@
 import sys
 import os
+import numpy as np
 import onnx
+from onnx import numpy_helper
 from .attr import default_attribute
 
 class ConnxObject:
@@ -15,10 +17,7 @@ class ConnxObject:
     def dump(self, depth):
         pass
 
-    def to_connx_text(self):
-        pass
-
-    def to_connx_binary(self):
+    def compile(self):
         pass
 
 
@@ -36,10 +35,10 @@ class ConnxModelProto(ConnxObject):
 
         self.graph.dump(depth + 1)
 
-    def to_connx_text(self, path):
+    def compile(self, path):
         os.makedirs(path, exist_ok=True)
 
-        self.graph.to_connx_text(os.path.join(path, 'main.connx'))
+        self.graph.compile(os.path.join(path, 'main.text'))
 
 
 class ConnxGraphProto(ConnxObject):
@@ -60,6 +59,7 @@ class ConnxGraphProto(ConnxObject):
                 value_info_proto = onnx.ValueInfoProto()
                 value_info_proto.name = initializer.proto.name
                 value_info_proto.type.tensor_type.elem_type = initializer.proto.data_type
+
                 for i in range(len(initializer.proto.dims)):
                     dim = onnx.TensorShapeProto.Dimension()
                     dim.dim_value = initializer.proto.dims[i]
@@ -77,6 +77,7 @@ class ConnxGraphProto(ConnxObject):
                 value_info_proto = onnx.ValueInfoProto()
                 value_info_proto.name = sparse_initializer.proto.name
                 value_info_proto.type.tensor_type.elem_type = sparse_initializer.proto.data_type
+
                 for i in range(len(sparse_initializer.proto.dims)):
                     dim = onnx.TensorShapeProto.Dimension()
                     dim.dim_value = sparse_initializer.proto.dims[i]
@@ -169,7 +170,7 @@ class ConnxGraphProto(ConnxObject):
         for node in self.node:
             node.dump(depth + 2)
 
-    def to_connx_text(self, path):
+    def compile(self, path):
         # Assign ID to value_info, intializer and sparse_initializer
         for id, value_info in zip(range(1, len(self.value_info) + 1), self.value_info):
             value_info.id = id
@@ -178,7 +179,45 @@ class ConnxGraphProto(ConnxObject):
             elif value_info.sparse_initializer is not None:
                 value_info.sparse_initializer.id = id
 
+        # Write data
+        base = os.path.dirname(path)
+        name = os.path.basename(path)
+        name = name[0:name.rindex('.')]
+
+        # [graph].[id]_[data_type]_[len(dim)]_[dim0]_[dim1]...data
+        def tensor_name(tensor, array):
+            path = '{}_{}_{}_{}'.format(os.path.join(base, name), str(tensor.id), 
+                                        str(tensor.proto.data_type), str(len(tensor.proto.dims)))
+            for i in range(len(tensor.proto.dims)):
+                path += '_'
+                path += str(tensor.proto.dims[i])
+            path += '.data'
+
+            return path
+
+        for initializer in self.initializer:
+            array = numpy_helper.to_array(initializer.proto)
+            file_path = tensor_name(initializer, array)
+
+            with open(file_path, 'wb') as out:
+                buf = array.tobytes()
+                out.write(buf)
+
+        for sparse_initializer in self.sparse_initializer:
+            array = numpy_helper.to_array(sparse_initializer.proto)
+            file_path = tensor_name(sparse_initializer, array)
+
+            with open(file_path, 'wb') as out:
+                buf = array.tobytes()
+                out.write(buf)
+
+        # Write text
         with open(path, 'w') as out:
+            # variable count
+            out.write('value_info ')
+            out.write(str(len(self.value_info)))
+            out.write('\n')
+
             # output count id id, ...
             out.write('output ')
             out.write(str(len(self.output)))
@@ -207,7 +246,7 @@ class ConnxGraphProto(ConnxObject):
             out.write('\n')
 
             for node in self.node:
-                node.to_connx_text(out)
+                node.compile(out)
 
 class ConnxTensorProto(ConnxObject):
     def __init__(self, proto, parent):
@@ -381,7 +420,7 @@ class ConnxAttributeProto(ConnxObject):
             out.write('value\n')
             self.value().dump(depth + 2)
 
-    def to_connx_text(self, out):
+    def compile(self, out):
         out.write(self.proto.name)
         out.write(' ')
         out.write(str(self.proto.type))
@@ -389,21 +428,27 @@ class ConnxAttributeProto(ConnxObject):
 
         if self.proto.type in [ 1, 2 ]:
             out.write(str(self.value()))
-            out.write(' ')
         elif self.proto.type == 3:
             s = self.value()
             out.write(str(len(s)))
             out.write(' ')
-            out.write(s.decode('utf-8')) 
-            out.write(' ')
-        elif self.proto.type in [ 6, 7, 8 ]:
+            out.write(s) 
+        elif self.proto.type in [ 6, 7 ]:
             value = self.value()
             out.write(str(len(value)))
-            out.write(' ')
 
             for i in range(len(value)):
-                out.write(str(value[i]))
                 out.write(' ')
+                out.write(str(value[i]))
+        elif self.proto.type == 8:
+            value = self.value()
+            out.write(str(len(value)))
+
+            for i in range(len(value)):
+                out.write(' ')
+                out.write(len(value[i]))
+                out.write(' ')
+                out.write(value[i])
         else:
             raise 'Not implemented yet: AttributeType ' + str(self.proto.type)
 
@@ -475,7 +520,7 @@ class ConnxNodeProto(ConnxObject):
 
         def get_attribute_proto(name):
             for attribute_proto in proto.attribute:
-                if attribute_proto.name is name:
+                if attribute_proto.name == name:
                     return attribute_proto
 
             return None
@@ -484,9 +529,9 @@ class ConnxNodeProto(ConnxObject):
 
         defaults = default_attribute[proto.op_type]
         for default_attr in defaults:
-            new_attr = get_attribute_proto(default_attr.name)
-            if new_attr is not None:
-                self.attribute.append(ConnxAttributeProto(new_attr, self))
+            original_attr = get_attribute_proto(default_attr.name)
+            if original_attr is not None:
+                self.attribute.append(ConnxAttributeProto(original_attr, self))
             else:
                 self.attribute.append(ConnxAttributeProto(default_attr, self))
 
@@ -526,7 +571,7 @@ class ConnxNodeProto(ConnxObject):
             attribute.dump(depth + 2)
         out.write('\n')
 
-    def to_connx_text(self, out):
+    def compile(self, out):
         out.write(self.proto.op_type)
         out.write(' ')
 
@@ -536,7 +581,7 @@ class ConnxNodeProto(ConnxObject):
         out.write(str(len(self.proto.input)))
         out.write(' ')
 
-        out.write(str(len(self.proto.attribute)))
+        out.write(str(len(self.attribute)))
         out.write(' ')
 
         for i in range(len(self.proto.output)):
@@ -550,7 +595,7 @@ class ConnxNodeProto(ConnxObject):
             out.write(' ')
 
         for attribute in self.attribute:
-            attribute.to_connx_text(out)
+            attribute.compile(out)
             out.write(' ')
 
         out.write('\n')

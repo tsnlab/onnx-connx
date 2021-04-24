@@ -1,15 +1,18 @@
-.PHONY: all mnist mobilenet yolo-tiny
+.PHONY: all test mnist mobilenet yolo-tiny
 
-all: mnist mobilenet yolo-tiny
+all: test mnist mobilenet yolo-tiny
+
+test:
+	python -m onnx_connx.test
 
 mnist:
-	python -m onnx_connx.cli examples/mnist/* -o out/mnist
+	python -m onnx_connx examples/mnist/* -o out/mnist
 
 mobilenet:
-	python -m onnx_connx.cli examples/mobilenet/* -o out/mobilenet
+	python -m onnx_connx examples/mobilenet/* -o out/mobilenet
 
 yolo-tiny:
-	python -m onnx_connx.cli examples/yolo-tiny/* -o out/yolo-tiny
+	python -m onnx_connx examples/yolo-tiny/* -o out/yolo-tiny
 
 clean:
 	rm -rf out
