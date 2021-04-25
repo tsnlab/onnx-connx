@@ -151,7 +151,7 @@ default_attribute = {
     'ReduceSum': [ ],
     'ReduceSumSquare': [ ],
     'Relu': [ ],
-    'Reshape': [ ],
+    'Reshape': [ _int('allowzero', 0) ],
     'Resize': [ ],
     'ReverseSequence': [ ],
     'RoiAlign': [ ],

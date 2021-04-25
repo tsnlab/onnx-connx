@@ -10,8 +10,16 @@ onnx-connx is an converting tool which changes ONNX model to CONNX model
  * pip install --upgrade pip
  * pip install onnx
 
-# Execute cli
-python -m onnx_connx
+# Compile
+python -m onnx_connx [onnx model]
+
+# Test
+## Dependent libraries
+ * pytest
+ * tabulate
+
+## Run test
+pytest
 
 # Convert example onnxs to connx
 make all

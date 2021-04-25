@@ -1,5 +1,7 @@
 import numpy as np
 
+# Most of the implementations are fllowd by ONNX reference implementation
+
 def Abs(X):
     return np.abs(X)
 
@@ -40,6 +42,23 @@ def ArgMin(data, axis, keepdims, select_last_index):
         result = data.shape[axis] - result - 1
 
     return result.astype(np.int64)
+
+def MatMul(A, B):
+    return np.matmul(A, B)
+
+def Relu(X):
+    return np.clip(X, 0, np.inf)
+
+def Reshape(data, shape, allowzero):
+    new_shape = np.copy(shape)
+
+    if allowzero == 0:
+        zeros_index = np.where(shape == 0)
+        new_shape[zeros_index] = np.array(data.shape)[zeros_index]
+
+    reshaped = np.reshape(data, new_shape)
+
+    return reshaped
 
 opset = {
     'Abs': Abs,
@@ -109,7 +128,7 @@ opset = {
     'Loop': None,
     'LpNormalization': None,
     'LpPool': None,
-    'MatMul': None,
+    'MatMul': MatMul,
     'MatMulInteger': None,
     'Max': None,
     'MaxPool': None,
@@ -148,8 +167,8 @@ opset = {
     'ReduceProd': None,
     'ReduceSum': None,
     'ReduceSumSquare': None,
-    'Relu': None,
-    'Reshape': None,
+    'Relu': Relu,
+    'Reshape': Reshape,
     'Resize': None,
     'ReverseSequence': None,
     'RoiAlign': None,
