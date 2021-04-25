@@ -3,7 +3,7 @@
 all: test mnist mobilenet yolo-tiny
 
 test:
-	python -m onnx_connx.test
+	pytest
 
 mnist:
 	python -m onnx_connx examples/mnist/* -o out/mnist

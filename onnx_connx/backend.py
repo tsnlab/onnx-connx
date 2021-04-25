@@ -19,6 +19,7 @@ class Backend(object):
 
         for i in range(len(model.graph.node)):
             if opset[model.graph.node[i].op_type] is None:
+                #print('Not supported op_type:', model.graph.node[i].op_type)
                 return False
 
         return True
