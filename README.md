@@ -13,6 +13,10 @@ onnx-connx is an converting tool which changes ONNX model to CONNX model
 # Compile
 python -m onnx_connx [onnx model]
 
+# Utility
+ * sudo apt install protobuf-compiler
+bin/dump - This utility will dump onnx or pb to text using protoc
+
 # Test
 ## Dependent libraries
  * pytest
