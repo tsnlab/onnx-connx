@@ -1,9 +1,10 @@
 import sys
 import os
+import itertools
 import numpy as np
 import onnx
 from onnx import numpy_helper
-from .attr import default_attribute
+from .opset import get_attribute
 
 class ConnxObject:
     def __init__(self, proto=None, parent=None):
@@ -13,6 +14,14 @@ class ConnxObject:
     def _tab(self, out, depth):
         for i in range(depth):
             out.write('\t')
+
+    def get_root(self):
+        node = self
+
+        while node.parent != None:
+            node = node.parent
+
+        return node
 
     def dump(self, depth):
         pass
@@ -25,7 +34,24 @@ class ConnxModelProto(ConnxObject):
     def __init__(self, proto):
         super().__init__(proto)
 
+        self.next_graph_id = 0
+
+        # Parse opset_import
+        specs = []
+        for i in range(len(proto.opset_import)):
+            opset_import = proto.opset_import[i]
+            specs.append({ 'domain': opset_import.domain, 'version': opset_import.version })
+
+        self.default_attributes = get_attribute(specs)
+
+        # parse
         self.graph = ConnxGraphProto(proto.graph, self)
+
+    def alloc_graph_id(self):
+        id = self.next_graph_id
+        self.next_graph_id += 1
+
+        return id
 
     def dump(self, depth=0):
         out = sys.stdout
@@ -33,17 +59,63 @@ class ConnxModelProto(ConnxObject):
         self._tab(out, depth)
         out.write('ModelProto\n')
 
+        self._tab(out, depth + 1)
+        out.write('opset_import ')
+        out.write(str(len(self.proto.opset_import)))
+        out.write(' ')
+
+        for i in range(len(self.proto.opset_import)):
+            opset_import = self.proto.opset_import[i]
+            domain = opset_import.domain
+            version = opset_import.version
+
+            out.write(str(len(domain)))
+            out.write(' ')
+            out.write(domain)
+            out.write(' ')
+            out.write(str(version))
+            out.write('\n')
+
         self.graph.dump(depth + 1)
 
     def compile(self, path):
         os.makedirs(path, exist_ok=True)
 
-        self.graph.compile(os.path.join(path, 'main.text'))
+        # Write graph
+        self.graph.compile(path)
+
+        with open(os.path.join(path, 'model.connx'), 'w') as out:
+            # Write connx version
+            out.write('connx 1\n')
+
+            # Write opset_import
+            out.write('opset_import ')
+            out.write(str(len(self.proto.opset_import)))
+            out.write(' ')
+
+            for i in range(len(self.proto.opset_import)):
+                opset_import = self.proto.opset_import[i]
+                domain = opset_import.domain
+                version = opset_import.version
+
+                out.write(str(len(domain)))
+                out.write(' ')
+                out.write(domain)
+                out.write(' ')
+                out.write(str(version))
+                out.write('\n')
+
+            # Write number of graphs
+            out.write('graph ')
+            out.write(str(self.next_graph_id))
+            out.write('\n')
 
 
 class ConnxGraphProto(ConnxObject):
     def __init__(self, proto, parent):
         super().__init__(proto, parent)
+
+        self.id = self.get_root().alloc_graph_id()
 
         self.initializer = [ ConnxTensorProto(proto, self) for proto in proto.initializer ]
         self.sparse_initializer = [ ConnxSparseTensorProto(proto, self) for proto in proto.sparse_initializer ]
@@ -107,18 +179,38 @@ class ConnxGraphProto(ConnxObject):
 
             self.output.append(value_info)
 
+        # Make value_info reflects to node
+        for node in proto.node:
+            for name in itertools.chain(node.input, node.output):
+                value_info = self.get_value_info(name)
+
+                if value_info is None:
+                    value_info = ConnxValueInfoProto(None, self, name=name)
+                    self.value_info.append(value_info)
+
+        # Assign ID to value_info, which has intializer and sparse_initializer first
+        id = 1
+        for value_info in self.value_info:
+            if value_info.initializer is not None:
+                value_info.id = id
+                value_info.initializer.id = id
+                id += 1
+            elif value_info.sparse_initializer is not None:
+                value_info.id = id
+                value_info.sparse_initializer.id = id
+                id += 1
+
+        # Assign ID to value_info, which doesn't have intializer and sparse_initializer next
+        for value_info in self.value_info:
+            if value_info.initializer is None and value_info.sparse_initializer is None:
+                value_info.id = id
+                id += 1
+
         self.node = [ ConnxNodeProto(proto, self) for proto in proto.node ]
 
     def get_value_info(self, name):
         for value_info in self.value_info:
-            if value_info.proto.name == name:
-                return value_info
-
-        return None
-
-    def get_value_info(self, name):
-        for value_info in self.value_info:
-            if value_info.proto.name == name:
+            if value_info.proto is not None and value_info.proto.name == name or value_info.name == name:
                 return value_info
 
         return None
@@ -128,6 +220,11 @@ class ConnxGraphProto(ConnxObject):
 
         self._tab(out, depth)
         out.write('GraphProto\n')
+
+        self._tab(out, depth + 1)
+        out.write('id ')
+        out.write(str(self.id))
+        out.write('\n')
 
         self._tab(out, depth + 1)
         out.write('name ')
@@ -171,22 +268,9 @@ class ConnxGraphProto(ConnxObject):
             node.dump(depth + 2)
 
     def compile(self, path):
-        # Assign ID to value_info, intializer and sparse_initializer
-        for id, value_info in zip(range(1, len(self.value_info) + 1), self.value_info):
-            value_info.id = id
-            if value_info.initializer is not None:
-                value_info.initializer.id = id
-            elif value_info.sparse_initializer is not None:
-                value_info.sparse_initializer.id = id
-
-        # Write data
-        base = os.path.dirname(path)
-        name = os.path.basename(path)
-        name = name[0:name.rindex('.')]
-
-        # [graph].[id]_[data_type]_[len(dim)]_[dim0]_[dim1]...data
+        # Write data - [graph_id].[tensor_id]_[data_type]_[len(dim)](_[dim0])*.data
         def tensor_name(tensor, array):
-            path = '{}_{}_{}_{}'.format(os.path.join(base, name), str(tensor.id), 
+            path = '{}_{}_{}_{}'.format(str(self.id), str(tensor.id), 
                                         str(tensor.proto.data_type), str(len(tensor.proto.dims)))
             for i in range(len(tensor.proto.dims)):
                 path += '_'
@@ -197,25 +281,30 @@ class ConnxGraphProto(ConnxObject):
 
         for initializer in self.initializer:
             array = numpy_helper.to_array(initializer.proto)
-            file_path = tensor_name(initializer, array)
+            name = tensor_name(initializer, array)
 
-            with open(file_path, 'wb') as out:
+            with open(os.path.join(path, name), 'wb') as data_out:
                 buf = array.tobytes()
-                out.write(buf)
+                data_out.write(buf)
 
         for sparse_initializer in self.sparse_initializer:
             array = numpy_helper.to_array(sparse_initializer.proto)
-            file_path = tensor_name(sparse_initializer, array)
+            name = tensor_name(sparse_initializer, array)
 
-            with open(file_path, 'wb') as out:
+            with open(os.path.join(path, name), 'wb') as data_out:
                 buf = array.tobytes()
-                out.write(buf)
+                data_out.write(buf)
 
-        # Write text
-        with open(path, 'w') as out:
+        # graph name
+        with open(os.path.join(path, str(self.id) + '.text'), 'w') as out:
             # variable count
             out.write('value_info ')
             out.write(str(len(self.value_info)))
+            out.write('\n')
+
+            # initializer count
+            out.write('initializer ')
+            out.write(str(len(self.initializer) + len(self.sparse_initializer)))
             out.write('\n')
 
             # output count id id, ...
@@ -247,6 +336,7 @@ class ConnxGraphProto(ConnxObject):
 
             for node in self.node:
                 node.compile(out)
+
 
 class ConnxTensorProto(ConnxObject):
     def __init__(self, proto, parent):
@@ -328,11 +418,12 @@ class ConnxSparseTensorProto(ConnxObject):
 
 
 class ConnxValueInfoProto(ConnxObject):
-    def __init__(self, proto, parent):
+    def __init__(self, proto, parent, name=None):
         super().__init__(proto, parent)
 
         self.id = 0
-        self.type = ConnxTypeProto(proto.type, self)
+        self.type = ConnxTypeProto(proto.type, self) if proto is not None else None
+        self.name = name
         self.initializer = None
         self.sparse_initializer = None
 
@@ -347,9 +438,10 @@ class ConnxValueInfoProto(ConnxObject):
         out.write(self.proto.name)
         out.write('\n')
 
-        self._tab(out, depth + 1)
-        out.write('type\n')
-        self.type.dump(depth + 2)
+        if self.type is not None:
+            self._tab(out, depth + 1)
+            out.write('type\n')
+            self.type.dump(depth + 2)
 
 
 class ConnxTypeProto(ConnxObject):
@@ -429,7 +521,7 @@ class ConnxAttributeProto(ConnxObject):
         if self.proto.type in [ 1, 2 ]:
             out.write(str(self.value()))
         elif self.proto.type == 3:
-            s = self.value()
+            s = self.value().decode('utf-8')
             out.write(str(len(s)))
             out.write(' ')
             out.write(s) 
@@ -441,7 +533,7 @@ class ConnxAttributeProto(ConnxObject):
                 out.write(' ')
                 out.write(str(value[i]))
         elif self.proto.type == 8:
-            value = self.value()
+            value = self.value().decode('utf-8')
             out.write(str(len(value)))
 
             for i in range(len(value)):
@@ -527,8 +619,10 @@ class ConnxNodeProto(ConnxObject):
 
         self.attribute = [ ]
 
-        defaults = default_attribute[proto.op_type]
-        for default_attr in defaults:
+        root = self.get_root()
+        default_attributes = root.default_attributes[proto.op_type]
+
+        for default_attr in default_attributes:
             original_attr = get_attribute_proto(default_attr.name)
             if original_attr is not None:
                 self.attribute.append(ConnxAttributeProto(original_attr, self))

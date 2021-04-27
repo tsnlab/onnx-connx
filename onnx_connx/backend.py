@@ -4,10 +4,9 @@ from onnx import ModelProto, NodeProto, IR_VERSION
 
 import tempfile
 
-from .opset.opset import opset
 from .backend_rep import BackendRep
 from .compiler import compile_from_model
-from .opset.opset import opset
+from .opset import get_opset
 
 class Backend(object):
     @classmethod
@@ -16,6 +15,13 @@ class Backend(object):
                       device='CPU',  # type: Text
                       **kwargs  # type: Any
                       ):  # type: (...) -> bool
+
+        specs = []
+        for i in range(len(model.opset_import)):
+            opset_import = model.opset_import[i]
+            specs.append({ 'domain': opset_import.domain, 'version': opset_import.version })
+
+        opset = get_opset(specs)
 
         for i in range(len(model.graph.node)):
             if opset[model.graph.node[i].op_type] is None:
@@ -54,6 +60,7 @@ class Backend(object):
                  outputs_info=None,  # type: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]]
                  **kwargs  # type: Dict[Text, Any]
                  ):  # type: (...) -> Optional[Tuple[Any, ...]]
+        print('##### run_node')
         '''Simple run one operator and return the results.
         Args:
             outputs_info: a list of tuples, which contains the element type and
