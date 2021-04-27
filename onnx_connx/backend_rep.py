@@ -1,37 +1,90 @@
 import os
 from glob import glob
 import numpy as np
-from .opset.opset import opset
+from .opset import get_opset
 
 class Graph:
-    def __init__(self, name, backend, inputs):
-        self.name = name
+    def __init__(self, backend, path, graph_id):
         self.backend = backend
-        self.inputs = inputs
+        self.path = path
+        self.graph_id = graph_id
+
+        self.text = self.__read_text()
+        self.initializer = { }
 
         self.input = []
         self.output = []
         self.value_info = [ None ]
-        self.text = backend.text[name]
 
-    def interprete(self):
+        self.__read_text()
+        self.__read_initializer(self.text[1])
+
+    def interprete(self, inputs):
         self._value_info(self.text[0])
-        self._output(self.text[1])
-        self._input(self.text[2])
-        node_count = self._node(self.text[3])
+        self._output(self.text[2])
+        self._input(self.text[3])
 
-        for i in range(4, 4 + node_count):
+        # Set initializer
+        for idx in range(len(self.initializer)):
+            self.value_info[idx + 1] = self.initializer[idx]
+
+        # Set input
+        for idx, id in zip(range(len(inputs)), self.input):
+            self.value_info[id] = inputs[idx]
+
+        # Execute node
+        node_count = self._node(self.text[4])
+        for i in range(5, 5 + node_count):
             self._exec(self.text[i])
+
+        #if len(self.output) == 1:
+        #    return self.value_info[self.output[0]]
+        #else:
+        return [ self.value_info[id] for id in self.output ]
+
+    def __read_text(self):
+        file_path = os.path.join(self.path, '{}.text'.format(self.graph_id))
+        with open(file_path, 'r') as f:
+            return f.readlines()
+
+    def __read_initializer(self, line):
+        tokens = list(line.split(' '))
+        tokens.pop(0)
+        count = int(tokens.pop(0))
+
+        for i in range(1, count + 1):
+            file_path = glob(os.path.join(path, '{}_{}_*.data'.format(self.graph_id, i)))[0]
+            data_id, data = self.__read_data(file_path)
+            self.initializer[data_id] = data
+
+    def __read_data(self, path):
+        tokens = os.path.basename(path).strip('.data').split('_')
+
+        tokens.pop(0)
+        data_id = tokens.pop(0)
+        data_type = int(tokens.pop(0))
+        dim_len = int(tokens.pop(0))
+        dims = [ ]
+        for i in range(dim_len):
+            dims.append(int(tokens.pop(0)))
+
+        dtype = [ None, np.float32, np.uint8, np.int8, np.uint16, np.int16,
+                  np.int32, np.int64, str, bool, np.float16, np.uint32, 
+                  np.uint64, np.csingle, np.cdouble, None ][data_type]
+
+        if dtype == None:
+            raise Exception('Tensor data type {} is not supported yet'.format(data_type))
+
+        with open(path, 'rb') as f:
+            buf = f.read()
+            return data_id, np.frombuffer(buf, dtype=dtype).reshape(dims)
 
     def _value_info(self, line):
         tokens = list(line.split(' '))
         tokens.pop(0)
 
-        count = int(tokens.pop(0))
-
-        self.value_info = [ None ]
-        for i in range(count):
-            self.value_info.append(None)
+        # Empty values with null (0th index)
+        self.value_info = [ None ] * (int(tokens.pop(0)) + 1)
 
     def _output(self, line):
         tokens = list(line.split(' '))
@@ -49,9 +102,7 @@ class Graph:
         count = int(tokens.pop(0))
 
         for i in range(count):
-            id = int(tokens.pop(0))
-            self.input.append(id)
-            self.value_info[id] = self.inputs[i]
+            self.input.append(int(tokens.pop(0)))
 
     def _node(self, line):
         tokens = list(line.split(' '))
@@ -123,7 +174,7 @@ class Graph:
             attribute.append(value)
 
         # Get Operator
-        op = opset[op_type]
+        op = self.backend.opset[op_type]
         if op is None:
             raise Exception('op_type {} is not supported yet'.format(op_type))
 
@@ -135,60 +186,63 @@ class Graph:
         result = op(*args)
 
         # Set output
-        if len(output) == 1:
-            self.value_info[output[0]] = result
-        else:
+        if type(result) is tuple:
             for i, id in zip(range(len(result)), output):
                 self.value_info[id] = result[i]
+        else:
+            self.value_info[output[0]] = result
 
         return True
 
-class Node:
-    def __init__(self):
-        pass
-
 class BackendRep(object):
     def __init__(self, path):
+        self.opset = None
+        self.graph_count = 0
+
         self.text = { }
         self.data = { }
 
-        # read text
-        for file_path in glob(os.path.join(path, '*.text')):
-            name = os.path.basename(file_path).strip('.text')
-            self.text[name] = self.__read_text(file_path)
+        # parse connx
+        self.__parse_connx(os.path.join(path, 'model.connx'))
 
-        # read data
-        for file_path in glob(os.path.join(path, '*.data')):
-            id, self.data[name] = self.__read_data(file_path)
+        # read text
+        for graph_id in range(self.graph_count):
+            self.text[graph_id] = Graph(self, path, graph_id)
+
+    def __parse_connx(self, path):
+        lines = self.__read_text(path)
+
+        # check connx version
+        tokens = lines[0].split(' ')
+        if tokens.pop(0) != 'connx' or int(tokens.pop(0)) > 1:
+            raise Exception('not supported connx version: {}'.format(lines[0].trim()))
+
+        # parse opset_import
+        tokens = lines[1].split(' ')
+        specs = []
+        tokens.pop(0)
+        for i in range(int(tokens.pop(0))):
+            domain_len = int(tokens.pop(0))
+            domain = tokens.pop(0)
+            while len(domain) < domain_len:
+                domain += ' ' + tokens.pop(0)
+
+            version = int(tokens.pop(0))
+
+            specs.append({ 'domain': domain, 'version': version })
+
+        self.opset = get_opset(specs)
+
+        # parse graph
+        tokens = lines[2].split(' ')
+        tokens.pop(0)
+        self.graph_count = int(tokens.pop(0))
 
     def __read_text(self, path):
         with open(path, 'r') as f:
             return f.readlines()
 
-    def __read_data(self, path):
-        tokens = os.path.basename(path).strip('.data').split('_')
-
-        tokens.pop(0) # drop name
-        id = tokens.pop(0)
-        data_type = int(tokens.pop(0))
-        dim_len = int(tokens.pop(0))
-        dims = [ ]
-        for i in range(dim_len):
-            dims.append(int(tokens.pop(0)))
-
-        dtype = [ None, np.float32, np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.int64, np.str, np.bool, np.float16, np.uint32, 
-                  np.uint64, np.csingle, np.cdouble, None ][data_type]
-
-        if dtype == None:
-            raise Exception('Tensor data type {} is not supported yet'.format(data_type))
-
-        with open(path, 'rb') as f:
-            buf = f.read()
-            return id, np.frombuffer(buf, dtype=dtype).reshape(dims)
-
     def run(self, inputs, **kwargs):  # type: (Any, **Any) -> Tuple[Any, ...]
-        graph = Graph('main', self, inputs)
-        graph.interprete()
+        graph = self.text[0]
+        return graph.interprete(inputs)
 
-        return [ graph.value_info[id] for id in graph.output ]
