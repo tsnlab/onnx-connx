@@ -61,6 +61,8 @@ def Reshape(data, shape, allowzero):
 
     return reshaped
 
+version = 18
+
 opset = {
     'Abs': Abs,
     'Acos': Acos,
@@ -230,7 +232,7 @@ opset = {
     'SoftmaxCrossEntropyLoss': None,
 }
 
-attribute = {
+attrset = {
     'Abs': [ ],
     'Acos': [ ],
     'Acosh': [ ],

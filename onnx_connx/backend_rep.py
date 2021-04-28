@@ -10,14 +10,14 @@ class Graph:
         self.graph_id = graph_id
 
         self.text = self.__read_text()
-        self.initializer = { }
+        self.initializer = [] # initializer 1 to n (initializer[0] contains value_info #1
 
         self.input = []
         self.output = []
         self.value_info = [ None ]
 
         self.__read_text()
-        self.__read_initializer(self.text[1])
+        self.__read_initializer()
 
     def interprete(self, inputs):
         self._value_info(self.text[0])
@@ -37,9 +37,6 @@ class Graph:
         for i in range(5, 5 + node_count):
             self._exec(self.text[i])
 
-        #if len(self.output) == 1:
-        #    return self.value_info[self.output[0]]
-        #else:
         return [ self.value_info[id] for id in self.output ]
 
     def __read_text(self):
@@ -47,15 +44,15 @@ class Graph:
         with open(file_path, 'r') as f:
             return f.readlines()
 
-    def __read_initializer(self, line):
-        tokens = list(line.split(' '))
+    def __read_initializer(self):
+        tokens = list(self.text[1].split(' '))
         tokens.pop(0)
         count = int(tokens.pop(0))
 
         for i in range(1, count + 1):
-            file_path = glob(os.path.join(path, '{}_{}_*.data'.format(self.graph_id, i)))[0]
+            file_path = glob(os.path.join(self.path, '{}_{}_*.data'.format(self.graph_id, i)))[0]
             data_id, data = self.__read_data(file_path)
-            self.initializer[data_id] = data
+            self.initializer.append(data)
 
     def __read_data(self, path):
         tokens = os.path.basename(path).strip('.data').split('_')

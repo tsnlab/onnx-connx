@@ -1,56 +1,62 @@
-from .opset_6 import opset as opset_6
-from .opset_6 import attribute as attribute_6
-from .opset_18 import opset as opset_18
-from .opset_18 import attribute as attribute_18
+from .opset import version as default_version
+from .opset import opset as default_opset
+from .opset import attrset as default_attrset
 
-_default_opsets = {
-    'min': 1,
-    'max': 18,
-    6: opset_6,
-    18: opset_18
-}
-
-_default_attributes = {
-    'min': 1,
-    'max': 18,
-    6: attribute_6,
-    18: attribute_18
+_versions = {
+    '': default_version
 }
 
 _opsets = {
-    '': _default_opsets
+    '': default_opset
 }
 
-_attributes = {
-    '': _default_attributes
+_attrsets = {
+    '': default_attrset
 }
 
 # specs: [ { domain: str, version: int } ]
+def _check(specs):
+    for spec in specs:
+        domain = spec['domain']
+        version = spec['version']
+
+        if domain not in _versions:
+            raise Exception('There is no such opset domain: {}, version: {}'.format(domain, version))
+
+        if _versions[domain] < version:
+            raise Exception('The opset version is lower than the expected one: opset domain: {}, version: {}, expected: {}'.format(domain, _versions[domain], version))
+
 def get_opset(specs):
+    _check(specs)
+
     opset = { }
 
     for spec in specs:
-        opsets = _opsets[spec['domain']]
+        domain = spec['domain']
+        version = spec['version']
 
-        for i in range(opsets['min'], opsets['max'] + 1):
-            if i in opsets:
-                for key, value in opsets[i].items():
-                    opset[key] = value
+        opsets = _opsets[domain]
+
+        for key, value in opsets.items():
+            opset[key] = value
 
     return opset
 
-def get_attribute(specs):
-    attribute = { }
+def get_attrset(specs):
+    _check(specs)
+
+    attrset = { }
 
     for spec in specs:
-        attributes = _attributes[spec['domain']]
+        domain = spec['domain']
+        version = spec['version']
 
-        for i in range(attributes['min'], attributes['max'] + 1):
-            if i in attributes:
-                for key, value in attributes[i].items():
-                    attribute[key] = value
+        attrsets = _attrsets[domain]
 
-    return attribute
+        for key, value in attrsets.items():
+            attrset[key] = value
+
+    return attrset
 
 
-__all__ = [ get_opset, get_attribute ]
+__all__ = [ get_opset, get_attrset ]
