@@ -1,6 +1,7 @@
 import numpy as np
 from .util import *
 from .MaxPool import MaxPool
+from .Conv import Conv
 
 # Most of the implementations are fllowd by ONNX reference implementation
 def Abs(X):
@@ -87,7 +88,7 @@ opset = {
     'ConcatFromSequence': None,
     'Constant': None,
     'ConstantOfShape': None,
-    'Conv': None,
+    'Conv': None,#Conv,
     'ConvInteger': None,
     'ConvTranspose': None,
     'Cos': None,
@@ -257,7 +258,8 @@ attrset = {
 
     'Constant': [ ],
     'ConstantOfShape': [ ],
-    'Conv': [ ],
+    'Conv': [ _string('auto_pad', 'NOTSET'), _ints('dilations', []), _int('group', 1),
+                 _ints('kernel_shape', []), _ints('pads', []), _ints('strides', []) ],
     'ConvInteger': [ ],
     'ConvTranspose': [ ],
     'Cos': [ ],
