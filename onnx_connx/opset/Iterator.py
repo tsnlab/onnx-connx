@@ -1,3 +1,5 @@
+import numpy as np
+
 class Iterator:
     # start: array of start position
     # stop: array of stop position
@@ -17,7 +19,7 @@ class Iterator:
         assert self.dim == len(self.stop)
         assert self.dim == len(self.step)
 
-        self.index = [ *self.start ]
+        self.index = np.array([ *self.start ])
         self.index[-1] -= self.step[-1]
 
     def next(self):
