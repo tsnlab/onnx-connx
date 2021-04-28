@@ -1,8 +1,11 @@
+import os
+import argparse
+import tempfile
+
+from onnx import numpy_helper
 import onnx.checker
 import onnx.onnx_cpp2py_export.checker as c_checker
 from onnx import ModelProto, NodeProto, IR_VERSION
-
-import tempfile
 
 from .backend_rep import BackendRep
 from .compiler import compile_from_model
@@ -38,9 +41,16 @@ class Backend(object):
                 ):  # type: (...) -> Optional[BackendRep]
         onnx.checker.check_model(model)
 
-        with tempfile.TemporaryDirectory() as path:
+        if 'out' in kwargs and kwargs['out'] is not None:
+            path = kwargs['out']
+            os.makedirs(path, exist_ok=True)
+
             compile_from_model(model, path)
             return BackendRep(path)
+        else:
+            with tempfile.TemporaryDirectory() as path:
+                compile_from_model(model, path)
+                return BackendRep(path)
 
     @classmethod
     def run_model(cls,
@@ -61,6 +71,7 @@ class Backend(object):
                  **kwargs  # type: Dict[Text, Any]
                  ):  # type: (...) -> Optional[Tuple[Any, ...]]
         print('##### run_node')
+        raise Exception('run_node is not implemented yet')
         '''Simple run one operator and return the results.
         Args:
             outputs_info: a list of tuples, which contains the element type and
@@ -89,3 +100,37 @@ class Backend(object):
     def supports_device(cls, device):  # type: (Text) -> bool
         return device in [ 'CPU', 'cpu' ]
 
+
+def main():
+    parser = argparse.ArgumentParser(description='ONNX Reference Backend')
+    parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
+    parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
+    parser.add_argument('-o', metavar='output directory', type=str, nargs='?', help='connx output directory(default is temporary directory)')
+
+    args = parser.parse_args()
+
+    onnx_path = args.onnx[0]
+    input_paths = args.pb
+    output_dir = args.o
+
+    model = onnx.load_model(onnx_path)
+    inputs = []
+
+    for input_path in input_paths:
+        with open(input_path, 'rb') as f:
+            tensor = onnx.TensorProto()
+            tensor.ParseFromString(f.read())
+
+            inputs.append(numpy_helper.to_array(tensor))
+
+    backend = Backend.prepare(model, out=output_dir)
+    outputs = backend.run(inputs)
+
+    if type(outputs) == tuple:
+        for output in outputs:
+            print(output)
+    else:
+        print(outputs)
+
+if __name__ == '__main__':
+    main()

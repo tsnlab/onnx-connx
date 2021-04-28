@@ -114,29 +114,3 @@ def MaxPool(X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order
     Indices = Indices.reshape(y_shape)
 
     return Y, Indices
-
-if __name__ == '__main__':
-    #X = np.array([[[[1, 2, 3],
-    #    [4, 5, 6],
-    #    [7, 8, 9]]]], dtype=np.float32)
-    #Y = MaxPool(X, None, 0, [], [2, 2], [1, 1, 1, 1], 0, [])
-
-    x = np.array([[[
-        [1, 2, 3, 4],
-        [5, 6, 7, 8],
-        [9, 10, 11, 12],
-        [13, 14, 15, 16],
-    ]]]).astype(np.float32)
-
-    y = np.array([[[
-        [11, 12],
-        [15, 16]]]]).astype(np.float32)
-
-    kernel_shape = [3, 3]
-    strides = [2, 2]
-
-    Y = MaxPool(x, None, 1, [], kernel_shape, [], 0, strides)
-    print(x)
-    print(y)
-    print(Y)
-

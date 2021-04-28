@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 import onnx
 from onnx import numpy_helper
-from .opset import get_attribute
+from .opset import get_attrset
 
 class ConnxObject:
     def __init__(self, proto=None, parent=None):
@@ -42,7 +42,7 @@ class ConnxModelProto(ConnxObject):
             opset_import = proto.opset_import[i]
             specs.append({ 'domain': opset_import.domain, 'version': opset_import.version })
 
-        self.default_attributes = get_attribute(specs)
+        self.attrset = get_attrset(specs)
 
         # parse
         self.graph = ConnxGraphProto(proto.graph, self)
@@ -620,9 +620,9 @@ class ConnxNodeProto(ConnxObject):
         self.attribute = [ ]
 
         root = self.get_root()
-        default_attributes = root.default_attributes[proto.op_type]
+        attrset = root.attrset[proto.op_type]
 
-        for default_attr in default_attributes:
+        for default_attr in attrset:
             original_attr = get_attribute_proto(default_attr.name)
             if original_attr is not None:
                 self.attribute.append(ConnxAttributeProto(original_attr, self))
