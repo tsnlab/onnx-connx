@@ -75,32 +75,25 @@ def MaxPool(X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order
             x_iter = Iterator(-pads[0:feature_dim], -pads[0:feature_dim] + output_shape * strides, strides)
             while x_iter.next():
                 x_idx = x_iter.index
-                #print('x_idx', x_idx)
 
                 y = None
-                arxmax_idx = None
+                argmax_idx = None
 
-                #k_iter = Iterator(np.maximum(x_idx, 0), np.minimum(x_idx + kernel_shape * dilations, feature_shape), dilations)
                 k_iter = Iterator([ 0 ] * len(kernel_shape), kernel_shape * dilations, dilations)
                 while k_iter.next():
                     k_idx = k_iter.index
                     d_idx = x_idx + k_idx
-                    #print('x_idx + k_idx', x_idx, k_idx, d_idx, feature_shape)
 
                     if (d_idx < 0).any() or (d_idx >= feature_shape).any():
                         continue
-                    #print('\tk_idx', k_idx)
 
                     # Get x in index (below 2 lines are numpy trick)
-                    #idx = tuple([ [ batch ], [ channel ] ] + [ [ i ] for i in k_idx ])
                     idx = tuple([ [ batch ], [ channel ] ] + [ [ i ] for i in d_idx ])
-                    #print('\tidx', idx)
                     x = X[idx][0]
 
                     # get maximum y
                     if y is None or x > y:
                         y = x
-                        #argmax_idx = _index_to_offset(feature_shape, k_idx)
                         argmax_idx = _index_to_offset(feature_shape, d_idx)
 
                 Y[y_idx] = y
