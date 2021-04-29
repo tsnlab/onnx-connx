@@ -79,6 +79,7 @@ def MaxPool(X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order
                 y = None
                 argmax_idx = None
 
+                # TODO: dilation to idx
                 k_iter = Iterator([ 0 ] * len(kernel_shape), kernel_shape * dilations, dilations)
                 while k_iter.next():
                     k_idx = k_iter.index

@@ -1,7 +1,7 @@
 import os
 from glob import glob
 import numpy as np
-from .opset import get_opset
+from .opset import get_opset, get_argcount
 
 class Graph:
     def __init__(self, backend, path, graph_id):
@@ -175,8 +175,23 @@ class Graph:
         if op is None:
             raise Exception('op_type {} is not supported yet'.format(op_type))
 
+        argcount = self.backend.argcount[op_type]
+
         # Make argument for the operator
-        args = [ self.value_info[id] for id in input ]
+        # check minimum input count
+        if len(input) < argcount[0]:
+            raise Exception('op_type {} must have at least {} args but {}'.format(op_type, argcount[0], len(input)))
+
+        if argcount[1] != -1: # argcount[1] == -1 means maximum argument count will be unlimited
+            args = []
+            for i in range(argcount[1]):
+                if i < len(input):
+                    args.append(self.value_info[input[i]])
+                else:
+                    args.append(None)
+        else:
+            args = [ self.value_info[id] for id in input ]
+
         args.extend(attribute)
 
         # Execute the operator
@@ -229,6 +244,7 @@ class BackendRep(object):
             specs.append({ 'domain': domain, 'version': version })
 
         self.opset = get_opset(specs)
+        self.argcount = get_argcount(specs)
 
         # parse graph
         tokens = lines[2].split(' ')
