@@ -2,9 +2,38 @@ import numpy as np
 from .util import _index_to_offset
 from .Iterator import Iterator
 
-# X: [DATA_BATCH, DATA_CHANNEL, DATA_FEATURE, DATA_FEATURE ...]
-# W: (M x C/group x kH x kW) M is number of feature map
+def _get(data, idx1, idx2, rest):
+    idx = ((idx1,), (idx2,)) + tuple([ [i] for i in rest ])
+    return data[idx][0]
+
+def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_map, dilations):
+    feature_shape = X.shape[2:]
+
+    while x_iter.next():
+        x_idx = x_iter.index
+
+        y = 0
+        while w_iter.next():
+            w_idx = w_iter.index # absolute weight index
+            d_idx = x_idx + w_idx * dilations # absolute x index
+
+            if (d_idx < 0).any() or (d_idx >= feature_shape).any():
+                continue
+
+            x = _get(X, batch, x_channel, d_idx)
+            w = _get(W, feature_map, w_channel, w_idx)
+
+            y += x * w
+
+        Y[y_idx] += y
+        y_idx += 1
+
+    return y_idx
+
+# X: (N x C x H x W) N - batch, C - channel, H, W - feature 1, 2
+# W: (M x C/group x kH x kW) M is number of feature Map
 # B: (M)
+# Y: (M x ( C x M ) x ...
 def Conv(X, W, B, auto_pad, dilations, group, kernel_shape, pads, strides):
     # feature dimension
     feature_dim = len(X.shape) - 2
@@ -43,87 +72,39 @@ def Conv(X, W, B, auto_pad, dilations, group, kernel_shape, pads, strides):
                     pads[i] += 1
     else:
         for i in range(feature_dim):
-            output_shape[i] = (X.shape[2 + i] - kernel_shape[i] + pads[i] + pads[i + feature_dim]) / strides[i] + 1
-
-    #print('X.shape', X.shape)
-    #print('dilations', dilations)
-    #print('kernel_shape', kernel_shape)
-    #print('pads', pads)
-    #print('strides', strides)
-    #print('ceil_mode', ceil_mode)
-    #print('Y.shape', output_shape)
+            output_shape[i] = np.floor((X.shape[2 + i] + pads[i] + pads[i + feature_dim] - ((kernel_shape[i] - 1) * dilations[i] + 1)) / strides[i] + 1)
 
     # Conv
-    Y = np.zeros([ X.shape[0] * X.shape[1] * int(np.prod(output_shape)) ], dtype=X.dtype)
+    Y = np.zeros([ X.shape[0] * W.shape[0] * int(np.prod(output_shape)) ], dtype=X.dtype)
+
     y_idx = 0
+    y_unit = np.prod(output_shape)
+
+    x_iter = Iterator(-pads[0:feature_dim], -pads[0:feature_dim] + output_shape * strides, strides)
+    w_iter = Iterator((0,) * len(kernel_shape), kernel_shape, (1,) * len(kernel_shape))
 
     for batch in range(X.shape[0]):
-        for channel in range(X.shape[1]):
-            x_iter = Iterator(-pads[0:feature_dim], -pads[0:feature_dim] + output_shape * strides, strides)
-            while x_iter.next():
-                x_idx = x_iter.index
+        for g in range(group):
+            feature_group = int(W.shape[0] / group)
+            for feature_map in range(g * feature_group, (g + 1) * feature_group): # divide feature_maps into groups
+                for channel in range(W.shape[1]): # iterate all of channels of feature_map
+                    _conv(Y, y_idx, X, x_iter, W, w_iter, batch, g * W.shape[1] + channel, channel, feature_map, dilations)
 
-                y = 0
-
-                k_iter = Iterator([ 0 ] * len(kernel_shape), kernel_shape, [ 1 ] * len(kernel_shape))
-                while k_iter.next():
-                    k_idx = k_iter.index
-                    d_idx = x_idx + k_idx * dilations
-
-                    if (d_idx < 0).any() or (d_idx >= feature_shape).any():
-                        continue
-
-                    # Get x in index (below 2 lines are numpy trick)
-                    idx = tuple([ [ batch ], [ int(channel / group) ] ] + [ [ i ] for i in d_idx ])
-                    try:
-                        x = X[idx][0]
-                    except:
-                        print('##### exception')
-                        print('kernel_shape', kernel_shape)
-                        print('k_idx', k_idx)
-                        print('d_idx', d_idx)
-                        print('idx', idx)
-                        print('X.shape', X.shape)
-
-                    # get w in index (below 2 lines are numpy trick)
-                    idx = tuple([ [ batch ], [ int(channel / group) ] ] + [ [ i ] for i in k_idx ])
-                    try:
-                        w = W[idx][0]
-                    except:
-                        print('##### exception')
-                        print('kernel_shape', kernel_shape)
-                        print('k_idx', k_idx)
-                        print('d_idx', d_idx)
-                        print('idx', idx)
-                        print('W.shape', W.shape)
-
-                    # convolution
-                    y += x * w
-
+                # Apply bias
                 if B is not None:
-                    try:
-                        y += B[int(channel / group)]
-                    except:
-                        print('##### B exception')
-                        print('channel', channel)
-                        print('group', group)
-                        print('kernel_shape', kernel_shape)
-                        print('k_idx', k_idx)
-                        print('d_idx', d_idx)
-                        print('idx', idx)
-                        print('B.shape', B.shape)
+                    Y[y_idx:y_idx + y_unit] += B[feature_map]
 
-                Y[y_idx] = y
-                y_idx += 1
+                # Next Y
+                y_idx += y_unit
 
-    ##print(output_shape)
-    y_shape = X.shape[0:2] + tuple(output_shape)
-
+    y_shape = ( X.shape[0], W.shape[0] ) + tuple(output_shape)
     Y = Y.reshape(y_shape)
 
     return Y
 
 if __name__ == '__main__':
+    np.set_printoptions(suppress=True)
+
     x = np.array([[[[0., 1., 2., 3., 4.],  # (1, 1, 5, 5) input tensor
                     [5., 6., 7., 8., 9.],
                     [10., 11., 12., 13., 14.],
@@ -211,3 +192,89 @@ if __name__ == '__main__':
     print(y_with_asymmetric_padding)
     print(y)
 
+    X = np.array([[[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ],
+                   [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ],
+                   [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ],
+                   [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]],
+
+                  [[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ],
+                   [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ],
+                   [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ],
+                   [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]]], dtype=np.float32)
+
+    W = np.array([[[1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1]],
+
+                  [[1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1]],
+
+                  [[1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1]],
+
+                  [[1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1]],
+
+                  [[1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1],
+                   [1, 1, 1]]], dtype=np.float32)
+    B = np.array([0, 0, 0, 0, 0], dtype=np.float32)
+
+    Y = Conv(X, W, B, 'NOTSET', [1], 1, [3], [0, 0], [1])
+    print('Y', Y.shape)
+    print(Y)
+    
+    X = np.array([[[ 0.61485744 , 2.266609 ,  -0.6338471 , -0.5252854 ,  0.37439212,
+           -0.5790688 ,  0.00983918 , 0.9603793 , -0.46351913 , 0.36915794],
+          [ 0.47667548 ,-0.71531826 ,-1.1694319 ,  2.6775472 ,  0.00551279,
+            0.41795763 , 1.2194241 , -0.6988767 ,  1.2031024 ,  0.12045277],
+          [-0.81724167 , 1.0358037 , -0.7069952 , -0.48040646 , 0.5303579,
+            1.6195798 ,  0.5835029 ,  0.6966272 ,  0.13647288 ,-0.38006115],
+          [-0.12181988 , 1.2606372 , -0.7348534 ,  0.39206776 ,-0.1505118,
+            0.41955033 ,-0.2926471 , -1.883369 ,   0.9505952 , -0.6647703]],
+
+         [[-0.6820142 ,  1.2609189 , -0.73058057 , 0.7190066 , -1.4959862,
+           -1.0779321 , -0.0977203 , -1.875889 ,   1.1097682 ,  1.3101448],
+          [-0.306289 ,  -1.2776446 ,  3.2391968 , -0.14821139 , 1.0438826,
+           -1.0862432 , -1.4266258 , -0.31091002 ,-1.0758785 ,  0.44990197],
+          [ 1.3861488 , -0.68311054 ,-0.06443063 ,-0.60621923 , 2.0141637,
+           -0.31519136 , 0.51596546 , 1.0919797 , -0.8936791 ,  1.2678089],
+          [ 1.3044437 ,  0.3372305 ,  0.70154065 ,-1.311863 ,   1.7068131,
+            0.1054736 , -0.5890126 ,  1.4471053 , -0.41578132 , 0.08982217]]], dtype=np.float32)
+    W = np.array([[[-0.01961216 ,-0.21915004 , 0.1707739],
+          [ 0.11830088 ,-0.0852503 ,  0.02577502],
+          [-0.21011245 , 0.04686272 , 0.00629106],
+          [ 0.13839489 , 0.05055654 ,-0.18292108]],
+
+         [[ 0.09803927 , 0.12640294 ,-0.27784857],
+          [-0.08919872 , 0.13132021 , 0.04292575],
+          [-0.28001052 ,-0.0465733 , -0.01670343],
+          [-0.01112548 ,-0.2060661 ,  0.03494331]],
+
+         [[-0.13500074 , 0.28724337 ,-0.27404594],
+          [ 0.09046549 ,-0.09060466 ,-0.02800086],
+          [-0.2243813 , -0.02602205 , 0.20020568],
+          [ 0.03388408 , 0.2809816 ,  0.16553208]],
+
+         [[ 0.03468421 , 0.19243145 , 0.2761224],
+          [-0.1766825 ,  0.21740961 ,-0.20534489],
+          [-0.19700938 , 0.05327201 , 0.17575413],
+          [-0.00405836 ,-0.10879789 ,-0.12962887]],
+
+         [[-0.10707444 , 0.2781434 ,  0.1961948],
+          [-0.22423914 ,-0.02152416 ,-0.05354539],
+          [ 0.0801405 ,  0.13197544 , 0.06836572],
+          [ 0.00790668 ,-0.10484424 , 0.22352207]]], dtype=np.float32)
+    B = np.array([-0.01867196 ,-0.12655136 , 0.18010029 ,-0.2809182 , -0.21195522], dtype=np.float32)
+
+    Y = Conv(X, W, B, 'NOTSET', [1], 1, [3], [0, 0], [1])
+    print('Y', Y.shape)
+    print(Y)
