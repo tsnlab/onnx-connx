@@ -1,6 +1,7 @@
 import os
 import argparse
 import tempfile
+import cProfile
 
 from onnx import numpy_helper
 import onnx.checker
@@ -101,14 +102,7 @@ class Backend(object):
         return device in [ 'CPU', 'cpu' ]
 
 
-def main():
-    parser = argparse.ArgumentParser(description='ONNX Reference Backend')
-    parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
-    parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
-    parser.add_argument('-o', metavar='output directory', type=str, nargs='?', help='connx output directory(default is temporary directory)')
-
-    args = parser.parse_args()
-
+def main(args):
     onnx_path = args.onnx[0]
     input_paths = args.pb
     output_dir = args.o
@@ -133,4 +127,16 @@ def main():
         print(outputs)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description='ONNX Reference Backend')
+    parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
+    parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
+    parser.add_argument('-o', metavar='output directory', type=str, nargs='?', help='connx output directory(default is temporary directory)')
+    parser.add_argument('-p', action='store_true', help='performance profiling')
+
+    args = parser.parse_args()
+
+    if args.p:
+        print('Performance profiling...')
+        cProfile.run('main(args)')
+    else:
+        main(args)

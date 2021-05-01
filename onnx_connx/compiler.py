@@ -1,16 +1,28 @@
+import sys
 import argparse
+import numpy as np
 import onnx
+from onnx import numpy_helper
 
 from .proto import ConnxModelProto
 
 def load_model(path) -> ConnxModelProto:
     proto = onnx.load_model(path)
+
     return ConnxModelProto(proto)
 
 def compile_from_model(model_proto, path) -> int:
     connx = ConnxModelProto(model_proto)
     connx.compile(path)
+
     return 0
+
+def load_tensor(path) -> onnx.TensorProto:
+    tensor = onnx.TensorProto()
+    with open(path, 'rb') as f:
+        tensor.ParseFromString(f.read())
+
+    return tensor
 
 def compile(*_args: str) -> int:
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
@@ -36,6 +48,12 @@ def compile(*_args: str) -> int:
             else:
                 model.compile(args.o)
         elif path.endswith('.pb'):
-            pass
+            tensor = load_tensor(path)
+
+            if args.d:
+                array = numpy_helper.to_array(tensor)
+
+                np.set_printoptions(suppress=True, threshold=sys.maxsize, linewidth=160)
+                print(array)
 
     return 0
