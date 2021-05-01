@@ -30,4 +30,7 @@ class Iterator:
             else:
                 self.index[i] = self.start[i]
 
+        self.index = np.array([ *self.start ])
+        self.index[-1] -= self.step[-1]
+
         return False
