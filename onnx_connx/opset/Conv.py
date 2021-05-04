@@ -1,5 +1,5 @@
 import numpy as np
-from .Iterator import Iterator
+from .util import Iterator
 
 def _get(data, idx1, idx2, rest):
     idx = ((idx1,), (idx2,)) + tuple([ [i] for i in rest ])
