@@ -1,6 +1,6 @@
 import numpy as np
+from .util import Iterator
 from .util import _index_to_offset
-from .Iterator import Iterator
 
 # X: [DATA_BATCH, DATA_CHANNEL, DATA_FEATURE, DATA_FEATURE ...]
 def MaxPool(X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides):
@@ -95,7 +95,7 @@ def MaxPool(X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order
                     # get maximum y
                     if y is None or x > y:
                         y = x
-                        argmax_idx = _index_to_offset(feature_shape, d_idx)
+                        argmax_idx = _index_to_offset(d_idx, feature_shape)
 
                 Y[y_idx] = y
 
