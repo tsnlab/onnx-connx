@@ -312,9 +312,10 @@ class ConnxGraphProto(ConnxObject):
             out.write(str(len(self.output)))
             out.write(' ')
 
-            for output in self.output:
-                out.write(str(output.id))
-                out.write(' ')
+            for i in range(len(self.output)):
+                out.write(str(self.output[i].id))
+                if i < len(self.output):
+                    out.write(' ')
 
             out.write('\n')
 
@@ -323,9 +324,10 @@ class ConnxGraphProto(ConnxObject):
             out.write(str(len(self.input)))
             out.write(' ')
 
-            for input in self.input:
-                out.write(str(input.id))
-                out.write(' ')
+            for i in range(len(self.input)):
+                out.write(str(self.input[i].id))
+                if i < len(self.output):
+                    out.write(' ')
 
             out.write('\n')
 
@@ -364,7 +366,8 @@ class ConnxTensorProto(ConnxObject):
         out.write('dims ')
         for i in range(len(self.proto.dims)):
             out.write(str(self.proto.dims[i]))
-            out.write(' ')
+            if i + 1 < len(self.proto.dims):
+                out.write(' ')
         out.write('\n')
 
     def DataType(data_type):
@@ -474,7 +477,9 @@ class ConnxTypeProto(ConnxObject):
                     out.write(dim.dim_param)
                 else:
                     out.write(str(dim.dim_value))
-                out.write(' ')
+
+                if i + 1 < len(tensor_type.shape.dim):
+                    out.write(' ')
 
             out.write('\n')
         elif self.proto.sequence_type != None:
@@ -649,14 +654,16 @@ class ConnxNodeProto(ConnxObject):
         out.write('input ')
         for i in range(len(self.proto.input)):
             out.write(self.proto.input[i])
-            out.write(' ')
+            if i + 1 < len(self.proto.input):
+                out.write(' ')
         out.write('\n')
 
         self._tab(out, depth + 1)
         out.write('output ')
         for i in range(len(self.proto.output)):
             out.write(self.proto.output[i])
-            out.write(' ')
+            if i + 1 < len(self.proto.output):
+                out.write(' ')
         out.write('\n')
 
         self._tab(out, depth + 1)
@@ -688,8 +695,9 @@ class ConnxNodeProto(ConnxObject):
             out.write(str(value_info.id))
             out.write(' ')
 
-        for attribute in self.attribute:
-            attribute.compile(out)
-            out.write(' ')
+        for i in range(len(self.attribute)):
+            self.attribute[i].compile(out)
+            if i + 1 < len(self.attribute):
+                out.write(' ')
 
         out.write('\n')
