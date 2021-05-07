@@ -128,6 +128,7 @@ class Graph:
         # parse attribute values
         attribute = []
         for i in range(attribute_count):
+            name = tokens.pop(0) # drop name length
             name = tokens.pop(0) # drop attribute name
             attr_type = int(tokens.pop(0))
 
