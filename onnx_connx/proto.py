@@ -1,7 +1,6 @@
 import sys
 import os
 import itertools
-import numpy as np
 import onnx
 from onnx import numpy_helper
 from .opset import get_attrset
@@ -511,6 +510,8 @@ class ConnxAttributeProto(ConnxObject):
             self.value().dump(depth + 2)
 
     def compile(self, out):
+        out.write(str(len(self.proto.name)))
+        out.write(' ')
         out.write(self.proto.name)
         out.write(' ')
         out.write(str(self.proto.type))
