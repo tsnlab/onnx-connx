@@ -432,7 +432,10 @@ class ConnxValueInfoProto(ConnxObject):
 
         self._tab(out, depth + 1)
         out.write('name ')
-        out.write(self.proto.name)
+        if self.proto is not None:
+            out.write(self.proto.name)
+        else:
+            out.write('<generated>')
         out.write('\n')
 
         if self.type is not None:
