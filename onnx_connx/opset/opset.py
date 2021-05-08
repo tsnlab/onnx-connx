@@ -233,6 +233,8 @@ opset = {
     'SoftmaxCrossEntropyLoss': None,
 }
 
+# [ minimum input count, maximum input count ]
+# -1 means unlimited
 argcount = {
     'Abs': [1, 1],
     'Acos': [1, 1],
@@ -246,7 +248,7 @@ argcount = {
     'Atan': [1, 1],
     'Atanh': [1, 1],
     'AveragePool': [1, 1],
-    'BatchNormalization': [5, 5],
+    'BatchNormalization': [3, 3],
     'BitShift': [2, 2],
     'Cast': [1, 1],
     'Ceil': [1, 1],
