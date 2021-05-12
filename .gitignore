@@ -3,3 +3,7 @@
 *.swp
 *.pyc
 __pycache__
+
+# emacs misc
+**#.py#
+**.emacs_backup_src
