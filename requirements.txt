@@ -1,0 +1,16 @@
+attrs
+iniconfig
+numpy
+onnx
+packaging
+pluggy
+protobuf
+py
+pyparsing
+pytest
+pytest-parallel
+six
+tabulate
+tblib
+toml
+typing-extensions
