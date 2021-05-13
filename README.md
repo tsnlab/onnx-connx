@@ -22,8 +22,10 @@ bin/dump - This utility will dump onnx or pb to text using protoc
  * pytest
  * tabulate
 
-## Run test
+## Run test 
 pytest
+> if you want to test in parallel
+```pytest --workers `(nproc)` --tests-per-worker auto```
 
 # Convert example onnxs to connx
 make all
