@@ -8,7 +8,9 @@ protobuf==3.16.0
 py==1.10.0
 pyparsing==2.4.7
 pytest==6.2.4
+pytest-parallel==0.1.0
 six==1.16.0
 tabulate==0.8.9
+tblib==1.7.0
 toml==0.10.2
 typing-extensions==3.10.0.0
