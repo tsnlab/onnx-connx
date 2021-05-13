@@ -2,7 +2,7 @@
 import numpy as np
 
 
-def _BatchNormalization(X, scale, B, input_mean, input_var, epsilon, momentum):
+def BatchNormalization(X, scale, B, input_mean, input_var, epsilon, momentum, training_mode):    
     dims_x = len(X.shape)
     dim_ones = (1,) * (dims_x - 2)
     scale = scale.reshape(-1, *dim_ones)
@@ -13,20 +13,6 @@ def _BatchNormalization(X, scale, B, input_mean, input_var, epsilon, momentum):
     Y = (X - input_mean) / np.sqrt(input_var + epsilon) * scale + B
 
     return Y 
-
-def BatchNormalization(X, scale, B, input_mean, input_var, epsilon, momentum, training_mode):    
-    if training_mode == 0:
-        return _BatchNormalization(X, scale, B, input_mean, input_var, epsilon, momentum)
-    else:
-        axis = tuple(np.delete(np.arange(len(X.shape)), 1))
-        current_mean = X.mean(axis=axis)
-        current_var = X.var(axis=axis)
-        running_mean = input_mean * momentum + current_mean * (1 - momentum)
-        running_var = input_var * momentum + current_var * (1 - momentum)
-        
-        Y = _BatchNormalization(X, scale, B, current_mean, current_var, epsilon, momentum)
-        
-        return Y, running_mean, running_var
 
 
 def test():
