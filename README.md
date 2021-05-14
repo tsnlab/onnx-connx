@@ -28,6 +28,9 @@ pytest
 # Convert example onnxs to connx
 make all
 
+# Convert ONNX test case to CONNX test case
+bin/convert [onnx test case path] [connx test case path]
+
 # Users
 ## Install onnx-connx via pip
 pip install git+https://github.com/semihlab/onnx-connx
