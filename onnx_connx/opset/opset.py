@@ -1,6 +1,8 @@
 import numpy as np
 from .util import *
 from .MaxPool import MaxPool
+from .BatchNormalization import BatchNormalization
+from .GlobalAveragePool import GlobalAveragePool
 from .Conv import Conv
 
 # Most of the implementations are fllowd by ONNX reference implementation
@@ -77,7 +79,7 @@ opset = {
     'Atan': None,
     'Atanh': None,
     'AveragePool': None,
-    'BatchNormalization': None,
+    'BatchNormalization': BatchNormalization,
     'BitShift': None,
     'Cast': None,
     'Ceil': None,
@@ -113,7 +115,7 @@ opset = {
     'GatherElements': None,
     'GatherND': None,
     'Gemm': None,
-    'GlobalAveragePool': None,
+    'GlobalAveragePool': GlobalAveragePool,
     'GlobalLpPool': None,
     'GlobalMaxPool': None,
     'Greater': None,
@@ -248,7 +250,7 @@ argcount = {
     'Atan': [1, 1],
     'Atanh': [1, 1],
     'AveragePool': [1, 1],
-    'BatchNormalization': [3, 3],
+    'BatchNormalization': [5, 5],
     'BitShift': [2, 2],
     'Cast': [1, 1],
     'Ceil': [1, 1],
@@ -284,7 +286,7 @@ argcount = {
     'GatherElements': None,
     'GatherND': None,
     'Gemm': None,
-    'GlobalAveragePool': None,
+    'GlobalAveragePool': [1, 1],
     'GlobalLpPool': None,
     'GlobalMaxPool': None,
     'Greater': None,
