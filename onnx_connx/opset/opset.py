@@ -90,6 +90,17 @@ def Exp(input):
     return np.exp(input)
 
 
+def Gather(data, indices, axis):
+    r"""
+    :param data: Tensor of rank r >= 1.
+    :param indices: Tensor of int32/int64 indices of any rank q. 
+                    All index values are expected to be  
+                    within bounds [-s, s-1] along axis of size s.  
+                    It is an error if any of the index values are out of bounds.
+    """
+    print(data, indices, axis)
+    return np.take(data,indices, axis)
+
 
 
 version = 18
@@ -139,7 +150,7 @@ opset = {
     'Flatten': None,
     'Floor': None,
     'GRU': None,
-    'Gather': None,
+    'Gather': Gather,
     'GatherElements': None,
     'GatherND': None,
     'Gemm': None,
@@ -310,7 +321,7 @@ argcount = {
     'Flatten': None,
     'Floor': None,
     'GRU': None,
-    'Gather': None,
+    'Gather': [2, 2],
     'GatherElements': None,
     'GatherND': None,
     'Gemm': None,
@@ -481,7 +492,7 @@ attrset = {
     'Flatten': [ ],
     'Floor': [ ],
     'GRU': [ ],
-    'Gather': [ ],
+    'Gather': [ _int('axis', 0) ],
     'GatherElements': [ ],
     'GatherND': [ ],
     'Gemm': [ ],
