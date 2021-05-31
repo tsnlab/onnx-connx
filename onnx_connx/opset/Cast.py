@@ -3,7 +3,7 @@ import sys
 import numpy
 
 
-def Cast(T1, to):
+def Cast(input, to):
     """
     Constrain input, output tensor type.
     Castable
@@ -31,25 +31,25 @@ def Cast(T1, to):
     }
 
     to_type = cvtTable[to]
-    from_type = T1.dtype
+    from_type = input.dtype
     
     if to_type is str:
         ss = []
-        for i in T1.flatten():
+        for i in input.flatten():
             s = str(i).encode('utf-8')
             su = s.decode('utf-8')
             ss.append(su)        
-        return numpy.array(ss).astype(numpy.object).reshape(T1.shape)
+        return numpy.array(ss).astype(numpy.object).reshape(input.shape)
 
     elif from_type is object or from_type is numpy.dtype(numpy.uint16) or to_type is object:
         little_endian = sys.byteorder == 'little'
 
         if object == to_type:
-            np_uint16_view = T1.astype(numpy.float32).flatten().view(dtype=numpy.uint16)
+            np_uint16_view = input.astype(numpy.float32).flatten().view(dtype=numpy.uint16)
             np_bfp16 = np_uint16_view[1::2] if little_endian else np_uint16_view[0::2]
-            return np_bfp16.reshape(T1.shape).astype(numpy.uint16)
+            return np_bfp16.reshape(input.shape).astype(numpy.uint16)
         else:
-            np_bfp16 = T1.flatten().view()
+            np_bfp16 = input.flatten().view()
             np_fp32_zeros = numpy.zeros((len(np_bfp16) * 2,), dtype=numpy.uint16)
             if little_endian:
                 np_fp32_zeros[1::2] = np_bfp16
@@ -57,6 +57,6 @@ def Cast(T1, to):
                 np_fp32_zeros[0::2] = np_bfp16
 
             np_fp32_from_bfloat = np_fp32_zeros.view(dtype=numpy.float32)
-            return np_fp32_from_bfloat.reshape(T1.shape)
+            return np_fp32_from_bfloat.reshape(input.shape)
     
-    return T1.astype(to_type)
+    return input.astype(to_type)
