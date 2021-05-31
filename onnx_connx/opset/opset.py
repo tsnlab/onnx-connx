@@ -5,6 +5,7 @@ from .BatchNormalization import BatchNormalization
 from .GlobalAveragePool import GlobalAveragePool
 from .Conv import Conv
 from .Cast import Cast
+from .Resize import Resize
 
 
 # Most of the implementations are fllowd by ONNX reference implementation
@@ -121,19 +122,16 @@ def Sigmoid(X):
     return 1.0 / (1.0 + np.exp(np.negative(X)))
 
 
-def Resize(X, roi, scales, sizes, coordinate_transformation_mode, cubic_coeff_a, exclude_outside, extrapolation_value, mode, nearest_mode):
-    Print(data.shape, starts, ends, axes, steps)
-    return data[starts:ends:steps]
-
-
 def Slice(data, starts, ends, axes, steps):
     print(data.shape, starts, ends, axes, steps)
     return data[starts:ends:steps]
 
 
-def Split(input, axis):
-    
-    return data[starts:ends:steps]
+def Split(input, split, axis):
+    print(input.shape, type(split), split, axis)
+    # if split is None:
+    #     return np.split(input, split, axis=axis) 
+    return input
 
 
 def Tanh(X):
@@ -258,7 +256,7 @@ opset = {
     'ReduceSumSquare': None,
     'Relu': Relu,
     'Reshape': Reshape,
-    'Resize': None,
+    'Resize': Resize,
     'ReverseSequence': None,
     'RoiAlign': None,
     'Round': None,
@@ -604,7 +602,7 @@ attrset = {
     'Resize': [ _string('coordinate_transformation_mode', 'half_pixel'),
                 _float('cubic_coeff_a', -0.75),
                 _int('exclude_outside', 0),
-                _int('extrapolation_value', 0.0),
+                _float('extrapolation_value', 0.0),
                 _string('mode', 'nearest'),
                 _string('nearest_mode', 'round_prefer_floor'),
                ],

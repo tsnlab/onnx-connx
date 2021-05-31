@@ -8,9 +8,9 @@
 
 [ ] Mobilenet  
 [X] Add  
-[ ] BatchNormalization  
+[X] BatchNormalization  
 [X] Conv  
-[ ] GlobalAveragePool  
+[X] GlobalAveragePool  
 [X] Relu  
 [X] Reshape  
 
@@ -26,7 +26,7 @@
 [X] MaxPool  
 [X] Mul  
 [X] Reshape  
-[ ] Resize  
+[X] Resize  
 [X] Shape  
 [X] Sigmoid  
 [ ] Slice  
