@@ -55,8 +55,8 @@ python -m onnx_connx.backend examples/mnist/model.onnx examples/mnist/input_0.pb
     pytest -k [test case]
  
     You can find ONNX test cases using find utility as below.
-    find ~/venv/lib/python3.6/site-packages/onnx/backend/test/ -name 'model.onnx'
-    /home/semih/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_add_uint8/model.onnx
+    find ./venv/lib/python3.6/site-packages/onnx/backend/test/ -name 'model.onnx'
+    /home/semih/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_add_uint8/model.onnx  
                                                 This is the 'test case' name ^^^^^^^^^^^^^^
  7. Run full ONNX test cases. It will take about 30 mins under AMD Ryzen Threadripper 1900X.
     pytest
