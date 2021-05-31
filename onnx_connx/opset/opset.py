@@ -82,6 +82,15 @@ def Concat(*inputs):
     return concat_result
 
 
+def Exp(input):
+    r"""
+    input type constraints
+        tensor(float16), tensor(float), tensor(double), tensor(bfloat16)
+    """
+    return np.exp(input)
+
+
+
 
 version = 18
 
@@ -124,7 +133,7 @@ opset = {
     'Elu': None,
     'Equal': None,
     'Erf': None,
-    'Exp': None,
+    'Exp': Exp,
     'Expand': None,
     'EyeLike': None,
     'Flatten': None,
@@ -295,7 +304,7 @@ argcount = {
     'Elu': None,
     'Equal': None,
     'Erf': None,
-    'Exp': None,
+    'Exp': [1, 1],
     'Expand': None,
     'EyeLike': None,
     'Flatten': None,
