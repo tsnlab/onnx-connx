@@ -141,7 +141,22 @@ def Slice(data, starts, ends, axes, steps):
 
 
 def Split(input, split, axis):
-    return np.split(input, split, axis)
+    outputs = []
+    start = 0
+
+    if split is None:
+        unit = input.shape[axis] // 2
+        return tuple(np.array_split(input, input.shape[axis] // unit, axis))
+    
+    for i in range(split.shape[0]):
+        expr = [":"] * len(input.shape)
+        expr[axis] = f"{start}:{start + split[i]}"
+        slice_str = (",").join(expr)
+        eval_str = f"input[{slice_str}]"
+        outputs.append(eval(eval_str))
+        start = split[i]
+        
+    return tuple(outputs)
 
     
 def Tanh(X):
