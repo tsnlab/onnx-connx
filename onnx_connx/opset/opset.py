@@ -105,6 +105,47 @@ def LeakyRelu(X, alpha):
     return np.clip(X, 0, np.inf) + np.clip(X, -np.inf, 0) * alpha
 
 
+def Log(input):
+    return np.log(input)
+
+
+def Mul(A, B):
+    return A * B
+
+
+def Shape(data):
+    return np.array(data.shape)
+
+
+def Sigmoid(X):
+    return 1.0 / (1.0 + np.exp(np.negative(X)))
+
+
+def Resize(X, roi, scales, sizes, coordinate_transformation_mode, cubic_coeff_a, exclude_outside, extrapolation_value, mode, nearest_mode):
+    Print(data.shape, starts, ends, axes, steps)
+    return data[starts:ends:steps]
+
+
+def Slice(data, starts, ends, axes, steps):
+    print(data.shape, starts, ends, axes, steps)
+    return data[starts:ends:steps]
+
+
+def Split(input, axis):
+    
+    return data[starts:ends:steps]
+
+
+def Tanh(X):
+    return np.tanh(X)	
+
+
+def Transpose(data, perm):
+    if not perm:
+        return np.transpose(data)
+    return np.transpose(data, perm)
+
+
 
 version = 18
 
@@ -125,7 +166,7 @@ opset = {
     'BitShift': None,
     'Cast': Cast,
     'Ceil': None,
-    'Celu': None,
+    'Celuk': None,
     'Clip': None,
     'Compress': None,
     'Concat': Concat,
@@ -172,7 +213,7 @@ opset = {
     'LSTM': None,
     'LeakyRelu': LeakyRelu,
     'Less': None,
-    'Log': None,
+    'Log': Log,
     'Loop': None,
     'LpNormalization': None,
     'LpPool': None,
@@ -185,7 +226,7 @@ opset = {
     'Mean': None,
     'Min': None,
     'Mod': None,
-    'Mul': None,
+    'Mul': Mul,
     'Multinomial': None,
     'Neg': None,
     'NonMaxSuppression': None,
@@ -232,18 +273,18 @@ opset = {
     'SequenceErase': None,
     'SequenceInsert': None,
     'SequenceLength': None,
-    'Shape': None,
+    'Shape': Shape,
     'Shrink': None,
-    'Sigmoid': None,
+    'Sigmoid': Sigmoid,
     'Sign': None,
     'Sin': None,
     'Sinh': None,
     'Size': None,
-    'Slice': None,
+    'Slice': Slice,
     'Softplus': None,
     'Softsign': None,
     'SpaceToDepth': None,
-    'Split': None,
+    'Split': Split,
     'SplitToSequence': None,
     'Sqrt': None,
     'Squeeze': None,
@@ -251,12 +292,12 @@ opset = {
     'Sub': None,
     'Sum': None,
     'Tan': None,
-    'Tanh': None,
+    'Tanh': Tanh ,
     'TfIdfVectorizer': None,
     'ThresholdedRelu': None,
     'Tile': None,
     'TopK': None,
-    'Transpose': None,
+    'Transpose': Transpose,
     'Trilu': None,
     'Unique': None,
     'Unsqueeze': None,
@@ -265,7 +306,7 @@ opset = {
     'Xor': None,
     'Function': None,
     'Celu': None,
-    'DynamicQuantizeLinear': None,
+    'DynamicQuantizkeLinear': None,
     'GreaterOrEqual': None,
     'HardSwish': None,
     'LessOrEqual': None,
@@ -343,7 +384,7 @@ argcount = {
     'LSTM': None,
     'LeakyRelu': [1, 1],
     'Less': None,
-    'Log': None,
+    'Log': [1, 1],
     'Loop': None,
     'LpNormalization': None,
     'LpPool': None,
@@ -356,7 +397,7 @@ argcount = {
     'Mean': None,
     'Min': None,
     'Mod': None,
-    'Mul': None,
+    'Mul': [2, 2],
     'Multinomial': None,
     'Neg': None,
     'NonMaxSuppression': None,
@@ -388,7 +429,7 @@ argcount = {
     'ReduceSumSquare': None,
     'Relu': [1, 1],
     'Reshape': [2, 2],
-    'Resize': None,
+    'Resize': [1, 4],
     'ReverseSequence': None,
     'RoiAlign': None,
     'Round': None,
@@ -403,18 +444,18 @@ argcount = {
     'SequenceErase': None,
     'SequenceInsert': None,
     'SequenceLength': None,
-    'Shape': None,
+    'Shape': [1, 1],
     'Shrink': None,
-    'Sigmoid': None,
+    'Sigmoid': [1, 1],
     'Sign': None,
     'Sin': None,
     'Sinh': None,
     'Size': None,
-    'Slice': None,
+    'Slice': [3, 5],
     'Softplus': None,
     'Softsign': None,
     'SpaceToDepth': None,
-    'Split': None,
+    'Split': [1, 2],
     'SplitToSequence': None,
     'Sqrt': None,
     'Squeeze': None,
@@ -422,12 +463,12 @@ argcount = {
     'Sub': None,
     'Sum': None,
     'Tan': None,
-    'Tanh': None,
+    'Tanh': [1, 1],
     'TfIdfVectorizer': None,
     'ThresholdedRelu': None,
     'Tile': None,
     'TopK': None,
-    'Transpose': None,
+    'Transpose': [1, 1],
     'Trilu': None,
     'Unique': None,
     'Unsqueeze': None,
@@ -560,7 +601,13 @@ attrset = {
     'ReduceSumSquare': [ ],
     'Relu': [ ],
     'Reshape': [ _int('allowzero', 0) ],
-    'Resize': [ ],
+    'Resize': [ _string('coordinate_transformation_mode', 'half_pixel'),
+                _float('cubic_coeff_a', -0.75),
+                _int('exclude_outside', 0),
+                _int('extrapolation_value', 0.0),
+                _string('mode', 'nearest'),
+                _string('nearest_mode', 'round_prefer_floor'),
+               ],
     'ReverseSequence': [ ],
     'RoiAlign': [ ],
     'Round': [ ],
@@ -586,7 +633,7 @@ attrset = {
     'Softplus': [ ],
     'Softsign': [ ],
     'SpaceToDepth': [ ],
-    'Split': [ ],
+    'Split': [ _int('axis', 0) ],
     'SplitToSequence': [ ],
     'Sqrt': [ ],
     'Squeeze': [ ],
@@ -599,7 +646,7 @@ attrset = {
     'ThresholdedRelu': [ ],
     'Tile': [ ],
     'TopK': [ ],
-    'Transpose': [ ],
+    'Transpose': [ _ints('perm', []) ],
     'Trilu': [ ],
     'Unique': [ ],
     'Unsqueeze': [ ],
