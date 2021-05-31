@@ -141,12 +141,9 @@ def Slice(data, starts, ends, axes, steps):
 
 
 def Split(input, split, axis):
-    print(input.shape, type(split), split, axis)
-    # if split is None:
-    #     return np.split(input, split, axis=axis) 
-    return input
+    return np.split(input, split, axis)
 
-
+    
 def Tanh(X):
     return np.tanh(X)	
 
