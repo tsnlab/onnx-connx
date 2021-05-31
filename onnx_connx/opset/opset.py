@@ -98,8 +98,11 @@ def Gather(data, indices, axis):
                     within bounds [-s, s-1] along axis of size s.  
                     It is an error if any of the index values are out of bounds.
     """
-    print(data, indices, axis)
     return np.take(data,indices, axis)
+
+
+def LeakyRelu(X, alpha):
+    return np.clip(X, 0, np.inf) + np.clip(X, -np.inf, 0) * alpha
 
 
 
@@ -167,7 +170,7 @@ opset = {
     'IsNaN': None,
     'LRN': None,
     'LSTM': None,
-    'LeakyRelu': None,
+    'LeakyRelu': LeakyRelu,
     'Less': None,
     'Log': None,
     'Loop': None,
@@ -338,7 +341,7 @@ argcount = {
     'IsNaN': None,
     'LRN': None,
     'LSTM': None,
-    'LeakyRelu': None,
+    'LeakyRelu': [1, 1],
     'Less': None,
     'Log': None,
     'Loop': None,
@@ -509,7 +512,7 @@ attrset = {
     'IsNaN': [ ],
     'LRN': [ ],
     'LSTM': [ ],
-    'LeakyRelu': [ ],
+    'LeakyRelu': [ _float('alpha', 0.01) ],
     'Less': [ ],
     'Log': [ ],
     'Loop': [ ],

@@ -19,8 +19,8 @@
 [X] Cast  
 [X] Concat  
 [X] Conv  
-[ ] Exp  
-[ ] Gather  
+[X] Exp  
+[X] Gather  
 [ ] LeakyRelu  
 [ ] Log  
 [X] MaxPool  
