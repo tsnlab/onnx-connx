@@ -3,6 +3,7 @@ from .opset import opset as default_opset
 from .opset import argcount as default_argcount
 from .opset import attrset as default_attrset
 
+
 _versions = {
     '': default_version
 }

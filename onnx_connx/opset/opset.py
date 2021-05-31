@@ -4,6 +4,8 @@ from .MaxPool import MaxPool
 from .BatchNormalization import BatchNormalization
 from .GlobalAveragePool import GlobalAveragePool
 from .Conv import Conv
+from .Cast import Cast
+
 
 # Most of the implementations are fllowd by ONNX reference implementation
 def Abs(X):
@@ -64,6 +66,8 @@ def Reshape(data, shape, allowzero):
 
     return reshaped
 
+
+
 version = 18
 
 opset = {
@@ -81,7 +85,7 @@ opset = {
     'AveragePool': None,
     'BatchNormalization': BatchNormalization,
     'BitShift': None,
-    'Cast': None,
+    'Cast': Cast,
     'Ceil': None,
     'Celu': None,
     'Clip': None,
