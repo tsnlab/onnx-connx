@@ -123,8 +123,21 @@ def Sigmoid(X):
 
 
 def Slice(data, starts, ends, axes, steps):
-    print(data.shape, starts, ends, axes, steps)
-    return data[starts:ends:steps]
+    # TODO : Naive implementation.
+    expr = [":"] * len(data.shape)
+    if axes is None:
+        axes = np.array([i for i in range(len(data.shape))])
+    
+    for i in range(axes.shape[0]):
+        if steps is None:
+            expr[axes[i]] = f"{starts[i]}:{ends[i]}"
+        else:
+            expr[axes[i]] = f"{starts[i]}:{ends[i]}:{steps[i]}"
+
+    slice_str = (",").join(expr)
+    eval_str = f"data[{slice_str}]"
+    
+    return eval(eval_str)
 
 
 def Split(input, split, axis):
