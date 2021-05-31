@@ -67,6 +67,10 @@ def Reshape(data, shape, allowzero):
     return reshaped
 
 
+def Concat(inputs):
+    return
+
+
 
 version = 18
 
