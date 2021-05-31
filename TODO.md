@@ -17,7 +17,7 @@
 [ ] YOLO v4  
 [X] Add  
 [X] Cast  
-[ ] Concat  
+[X] Concat  
 [X] Conv  
 [ ] Exp  
 [ ] Gather  

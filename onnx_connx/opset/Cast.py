@@ -4,7 +4,7 @@ import numpy
 
 
 def Cast(input, to):
-    """
+    r"""
     Constrain input, output tensor type.
     Castable
         tensor(float16), tensor(float), tensor(double), 

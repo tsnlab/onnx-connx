@@ -67,8 +67,19 @@ def Reshape(data, shape, allowzero):
     return reshaped
 
 
-def Concat(inputs):
-    return
+def Concat(*inputs):
+    r"""
+    inputs type constraints
+        tensor(uint8), tensor(uint16), tensor(uint32), tensor(uint64), 
+        tensor(int8), tensor(int16), tensor(int32), tensor(int64), 
+        tensor(bfloat16), tensor(float16), tensor(float), tensor(double), 
+        tensor(string), tensor(bool), tensor(complex64), tensor(complex128)
+    """
+    axis = inputs[-1]
+    inputs = inputs[:-1]
+    concat_result = np.concatenate(inputs, axis)
+        
+    return concat_result
 
 
 
@@ -94,7 +105,7 @@ opset = {
     'Celu': None,
     'Clip': None,
     'Compress': None,
-    'Concat': None,
+    'Concat': Concat,
     'ConcatFromSequence': None,
     'Constant': None,
     'ConstantOfShape': None,
