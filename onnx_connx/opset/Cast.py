@@ -3,7 +3,7 @@ import sys
 import numpy
 
 
-def Cast(input, to):
+def Cast(input, output_count, to):
     r"""
     Constrain input, output tensor type.
     Castable

@@ -9,22 +9,22 @@ from .Resize import Resize
 
 
 # Most of the implementations are fllowd by ONNX reference implementation
-def Abs(X):
+def Abs(X, ouput_count):
     return np.abs(X)
 
-def Acos(X):
+def Acos(X, output_count):
     return np.arccos(X)
 
-def Acosh(input):
+def Acosh(input, ouput_count):
     return np.arccosh(input)
 
-def Add(A, B):
+def Add(A, B, ouput_count):
     return A + B
 
-def And(A, B):
+def And(A, B, output_count):
     return np.logical_and(A, B)
 
-def ArgMax(data, axis, keepdims, select_last_index):
+def ArgMax(data, output_count, axis, keepdims, select_last_index):
     if select_last_index == 1:
          data = np.flip(data, axis)
 
@@ -37,7 +37,7 @@ def ArgMax(data, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
-def ArgMin(data, axis, keepdims, select_last_index):
+def ArgMin(data, output_count, axis, keepdims, select_last_index):
     if select_last_index == 1:
          data = np.flip(data, axis)
 
@@ -50,13 +50,13 @@ def ArgMin(data, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
-def MatMul(A, B):
+def MatMul(A, B, output_count):
     return np.matmul(A, B)
 
-def Relu(X):
+def Relu(X, output_count):
     return np.clip(X, 0, np.inf)
 
-def Reshape(data, shape, allowzero):
+def Reshape(data, shape, ouput_count, allowzero):
     new_shape = np.copy(shape)
 
     if allowzero == 0:
@@ -77,13 +77,13 @@ def Concat(*inputs):
         tensor(string), tensor(bool), tensor(complex64), tensor(complex128)
     """
     axis = inputs[-1]
-    inputs = inputs[:-1]
+    inputs = inputs[:-2]
     concat_result = np.concatenate(inputs, axis)
         
     return concat_result
 
 
-def Exp(input):
+def Exp(input, output_count):
     r"""
     input type constraints
         tensor(float16), tensor(float), tensor(double), tensor(bfloat16)
@@ -91,7 +91,7 @@ def Exp(input):
     return np.exp(input)
 
 
-def Gather(data, indices, axis):
+def Gather(data, indices, output_count, axis):
     r"""
     :param data: Tensor of rank r >= 1.
     :param indices: Tensor of int32/int64 indices of any rank q. 
@@ -102,27 +102,27 @@ def Gather(data, indices, axis):
     return np.take(data,indices, axis)
 
 
-def LeakyRelu(X, alpha):
+def LeakyRelu(X, ouput_count, alpha):
     return np.clip(X, 0, np.inf) + np.clip(X, -np.inf, 0) * alpha
 
 
-def Log(input):
+def Log(input, output_count):
     return np.log(input)
 
 
-def Mul(A, B):
+def Mul(A, B, output_count):
     return A * B
 
 
-def Shape(data):
+def Shape(data, output_count):
     return np.array(data.shape)
 
 
-def Sigmoid(X):
+def Sigmoid(X, output_count):
     return 1.0 / (1.0 + np.exp(np.negative(X)))
 
 
-def Slice(data, starts, ends, axes, steps):
+def Slice(data, starts, ends, axes, steps, output_count):
     # TODO : Naive implementation.
     expr = [":"] * len(data.shape)
     if axes is None:
@@ -140,13 +140,12 @@ def Slice(data, starts, ends, axes, steps):
     return eval(eval_str)
 
 
-def Split(input, split, axis):
+def Split(input, split, output_count, axis):
     outputs = []
     start = 0
 
     if split is None:
-        unit = input.shape[axis] // 2
-        return tuple(np.array_split(input, input.shape[axis] // unit, axis))
+        return tuple(np.array_split(input, output_count, axis))
     
     for i in range(split.shape[0]):
         expr = [":"] * len(input.shape)
@@ -159,11 +158,11 @@ def Split(input, split, axis):
     return tuple(outputs)
 
     
-def Tanh(X):
+def Tanh(X, output_count):
     return np.tanh(X)	
 
 
-def Transpose(data, perm):
+def Transpose(data, output_count, perm):
     if not perm:
         return np.transpose(data)
     return np.transpose(data, perm)

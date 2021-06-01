@@ -15,6 +15,7 @@ backend_test.exclude(r'test_gradient_*')
 backend_test.exclude(r'test_momentum_*')
 backend_test.exclude(r'nesterov_momentum_*')
 
+
 # Exclude deprecated operators
 backend_test.exclude(r'test_scatter_*')
 backend_test.exclude(r'test_upsample_*')
