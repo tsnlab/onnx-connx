@@ -9,22 +9,22 @@ from .Resize import Resize
 
 
 # Most of the implementations are fllowd by ONNX reference implementation
-def Abs(X, ouput_count):
+def Abs(ouput_count, X):
     return np.abs(X)
 
-def Acos(X, output_count):
+def Acos(output_count, X):
     return np.arccos(X)
 
-def Acosh(input, ouput_count):
+def Acosh(ouput_count, input):
     return np.arccosh(input)
 
-def Add(A, B, ouput_count):
+def Add(ouput_count, A, B):
     return A + B
 
-def And(A, B, output_count):
+def And(output_count, A, B):
     return np.logical_and(A, B)
 
-def ArgMax(data, output_count, axis, keepdims, select_last_index):
+def ArgMax(output_count, data, axis, keepdims, select_last_index):
     if select_last_index == 1:
          data = np.flip(data, axis)
 
@@ -37,7 +37,7 @@ def ArgMax(data, output_count, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
-def ArgMin(data, output_count, axis, keepdims, select_last_index):
+def ArgMin(output_count, data, axis, keepdims, select_last_index):
     if select_last_index == 1:
          data = np.flip(data, axis)
 
@@ -50,13 +50,13 @@ def ArgMin(data, output_count, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
-def MatMul(A, B, output_count):
+def MatMul(output_count, A, B):
     return np.matmul(A, B)
 
-def Relu(X, output_count):
+def Relu(output_count, X):
     return np.clip(X, 0, np.inf)
 
-def Reshape(data, shape, ouput_count, allowzero):
+def Reshape(ouput_count, data, shape, allowzero):
     new_shape = np.copy(shape)
 
     if allowzero == 0:
@@ -77,13 +77,13 @@ def Concat(*inputs):
         tensor(string), tensor(bool), tensor(complex64), tensor(complex128)
     """
     axis = inputs[-1]
-    inputs = inputs[:-2]
+    inputs = inputs[1:-1]
     concat_result = np.concatenate(inputs, axis)
         
     return concat_result
 
 
-def Exp(input, output_count):
+def Exp(output_count, input):
     r"""
     input type constraints
         tensor(float16), tensor(float), tensor(double), tensor(bfloat16)
@@ -91,7 +91,7 @@ def Exp(input, output_count):
     return np.exp(input)
 
 
-def Gather(data, indices, output_count, axis):
+def Gather(output_count, data, indices, axis):
     r"""
     :param data: Tensor of rank r >= 1.
     :param indices: Tensor of int32/int64 indices of any rank q. 
@@ -102,27 +102,27 @@ def Gather(data, indices, output_count, axis):
     return np.take(data,indices, axis)
 
 
-def LeakyRelu(X, ouput_count, alpha):
+def LeakyRelu(ouput_count, X, alpha):
     return np.clip(X, 0, np.inf) + np.clip(X, -np.inf, 0) * alpha
 
 
-def Log(input, output_count):
+def Log(output_count, input):
     return np.log(input)
 
 
-def Mul(A, B, output_count):
+def Mul(output_count, A, B):
     return A * B
 
 
-def Shape(data, output_count):
+def Shape(output_count, data):
     return np.array(data.shape)
 
 
-def Sigmoid(X, output_count):
+def Sigmoid(output_count, X):
     return 1.0 / (1.0 + np.exp(np.negative(X)))
 
 
-def Slice(data, starts, ends, axes, steps, output_count):
+def Slice(output_count, data, starts, ends, axes, steps):
     # TODO : Naive implementation.
     expr = [":"] * len(data.shape)
     if axes is None:
@@ -140,7 +140,7 @@ def Slice(data, starts, ends, axes, steps, output_count):
     return eval(eval_str)
 
 
-def Split(input, split, output_count, axis):
+def Split(output_count, input, split, axis):
     outputs = []
     start = 0
 
@@ -158,11 +158,11 @@ def Split(input, split, output_count, axis):
     return tuple(outputs)
 
     
-def Tanh(X, output_count):
+def Tanh(output_count, X):
     return np.tanh(X)	
 
 
-def Transpose(data, output_count, perm):
+def Transpose(output_count, data, perm):
     if not perm:
         return np.transpose(data)
     return np.transpose(data, perm)

@@ -2,7 +2,7 @@
 import numpy as np
 
 
-def GlobalAveragePool(X, output_count):
+def GlobalAveragePool(output_count, X):
     spatial_shape = np.ndim(X) - 2    
     Y = np.average(X, axis=tuple(range(spatial_shape, spatial_shape + 2)))
     for _ in range(spatial_shape):
