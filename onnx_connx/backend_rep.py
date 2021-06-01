@@ -182,7 +182,7 @@ class Graph:
         # check minimum input count
         if len(input) < argcount[0]:
             raise Exception('op_type {} must have at least {} args but {}'.format(op_type, argcount[0], len(input)))
-
+        
         if argcount[1] != -1: # argcount[1] == -1 means maximum argument count will be unlimited
             args = []
             for i in range(argcount[1]):
@@ -193,6 +193,7 @@ class Graph:
         else:
             args = [ self.value_info[id] for id in input ]
 
+        args.append(output_count)
         args.extend(attribute)
 
         # Execute the operator

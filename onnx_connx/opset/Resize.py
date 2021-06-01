@@ -229,7 +229,7 @@ def nearest_coeffs(ratio, mode='round_prefer_floor'):          # type: (float, T
         return np.array([0, 1])
 
         
-def Resize(X, roi, scales, sizes, coordinate_transformation_mode, cubic_coeff_a, exclude_outside, extrapolation_value, mode, nearest_mode):
+def Resize(X, roi, scales, sizes, output_count, coordinate_transformation_mode, cubic_coeff_a, exclude_outside, extrapolation_value, mode, nearest_mode):
     if mode == "nearest":
         return interpolate_nd(X,
                               lambda x: nearest_coeffs(x, mode=nearest_mode),
