@@ -47,6 +47,9 @@ def ArgMin(data, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
+def Asin(input):
+    return np.arcsin(input)
+
 def MatMul(A, B):
     return np.matmul(A, B)
 
@@ -74,7 +77,7 @@ opset = {
     'And': And,
     'ArgMax': ArgMax,
     'ArgMin': ArgMin,
-    'Asin': None,
+    'Asin': Asin,
     'Asinh': None,
     'Atan': None,
     'Atanh': None,
