@@ -14,6 +14,8 @@ backend_test.exclude(r'test_adam_*')
 backend_test.exclude(r'test_gradient_*')
 backend_test.exclude(r'test_momentum_*')
 backend_test.exclude(r'nesterov_momentum_*')
+backend_test.exclude(r'test_batchnorm_epsilon_training_mode')
+backend_test.exclude(r'test_batchnorm_example_training_mode')
 
 # Exclude deprecated operators
 backend_test.exclude(r'test_scatter_*')
