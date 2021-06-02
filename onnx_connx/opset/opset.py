@@ -4,24 +4,27 @@ from .MaxPool import MaxPool
 from .BatchNormalization import BatchNormalization
 from .GlobalAveragePool import GlobalAveragePool
 from .Conv import Conv
+from .Cast import Cast
+from .Resize import Resize
+
 
 # Most of the implementations are fllowd by ONNX reference implementation
-def Abs(X):
+def Abs(ouput_count, X):
     return np.abs(X)
 
-def Acos(X):
+def Acos(output_count, X):
     return np.arccos(X)
 
-def Acosh(input):
+def Acosh(ouput_count, input):
     return np.arccosh(input)
 
-def Add(A, B):
+def Add(ouput_count, A, B):
     return A + B
 
-def And(A, B):
+def And(output_count, A, B):
     return np.logical_and(A, B)
 
-def ArgMax(data, axis, keepdims, select_last_index):
+def ArgMax(output_count, data, axis, keepdims, select_last_index):
     if select_last_index == 1:
          data = np.flip(data, axis)
 
@@ -34,7 +37,8 @@ def ArgMax(data, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
-def ArgMin(data, axis, keepdims, select_last_index):
+
+def ArgMin(output_count, data, axis, keepdims, select_last_index):
     if select_last_index == 1:
          data = np.flip(data, axis)
 
@@ -47,16 +51,20 @@ def ArgMin(data, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
-def Asin(input):
+
+def Asin(output_count, input):
     return np.arcsin(input)
 
-def MatMul(A, B):
+
+def MatMul(output_count, A, B):
+
     return np.matmul(A, B)
 
-def Relu(X):
+def Relu(output_count, X):
     return np.clip(X, 0, np.inf)
 
-def Reshape(data, shape, allowzero):
+
+def Reshape(ouput_count, data, shape, allowzero):
     new_shape = np.copy(shape)
 
     if allowzero == 0:
@@ -66,6 +74,108 @@ def Reshape(data, shape, allowzero):
     reshaped = np.reshape(data, new_shape)
 
     return reshaped
+
+
+def Concat(*inputs):
+    r"""
+    inputs type constraints
+        tensor(uint8), tensor(uint16), tensor(uint32), tensor(uint64), 
+        tensor(int8), tensor(int16), tensor(int32), tensor(int64), 
+        tensor(bfloat16), tensor(float16), tensor(float), tensor(double), 
+        tensor(string), tensor(bool), tensor(complex64), tensor(complex128)
+    """
+    axis = inputs[-1]
+    inputs = inputs[1:-1]
+    concat_result = np.concatenate(inputs, axis)
+        
+    return concat_result
+
+
+def Exp(output_count, input):
+    r"""
+    input type constraints
+        tensor(float16), tensor(float), tensor(double), tensor(bfloat16)
+    """
+    return np.exp(input)
+
+
+def Gather(output_count, data, indices, axis):
+    r"""
+    :param data: Tensor of rank r >= 1.
+    :param indices: Tensor of int32/int64 indices of any rank q. 
+                    All index values are expected to be  
+                    within bounds [-s, s-1] along axis of size s.  
+                    It is an error if any of the index values are out of bounds.
+    """
+    return np.take(data,indices, axis)
+
+
+def LeakyRelu(ouput_count, X, alpha):
+    return np.clip(X, 0, np.inf) + np.clip(X, -np.inf, 0) * alpha
+
+
+def Log(output_count, input):
+    return np.log(input)
+
+
+def Mul(output_count, A, B):
+    return A * B
+
+
+def Shape(output_count, data):
+    return np.array(data.shape)
+
+
+def Sigmoid(output_count, X):
+    return 1.0 / (1.0 + np.exp(np.negative(X)))
+
+
+def Slice(output_count, data, starts, ends, axes, steps):
+    # TODO : Naive implementation.
+    expr = [":"] * len(data.shape)
+    if axes is None:
+        axes = np.array([i for i in range(len(data.shape))])
+    
+    for i in range(axes.shape[0]):
+        if steps is None:
+            expr[axes[i]] = f"{starts[i]}:{ends[i]}"
+        else:
+            expr[axes[i]] = f"{starts[i]}:{ends[i]}:{steps[i]}"
+
+    slice_str = (",").join(expr)
+    eval_str = f"data[{slice_str}]"
+    
+    return eval(eval_str)
+
+
+def Split(output_count, input, split, axis):
+    outputs = []
+    start = 0
+
+    if split is None:
+        return tuple(np.array_split(input, output_count, axis))
+    
+    for i in range(split.shape[0]):
+        expr = [":"] * len(input.shape)
+        expr[axis] = f"{start}:{start + split[i]}"
+        slice_str = (",").join(expr)
+        eval_str = f"input[{slice_str}]"
+        outputs.append(eval(eval_str))
+        start = split[i]
+        
+    return tuple(outputs)
+
+    
+def Tanh(output_count, X):
+    return np.tanh(X)	
+
+
+def Transpose(output_count, data, perm):
+    if not perm:
+        return np.transpose(data)
+    return np.transpose(data, perm)
+
+
 
 version = 18
 
@@ -84,12 +194,12 @@ opset = {
     'AveragePool': None,
     'BatchNormalization': BatchNormalization,
     'BitShift': None,
-    'Cast': None,
+    'Cast': Cast,
     'Ceil': None,
-    'Celu': None,
+    'Celuk': None,
     'Clip': None,
     'Compress': None,
-    'Concat': None,
+    'Concat': Concat,
     'ConcatFromSequence': None,
     'Constant': None,
     'ConstantOfShape': None,
@@ -108,13 +218,13 @@ opset = {
     'Elu': None,
     'Equal': None,
     'Erf': None,
-    'Exp': None,
+    'Exp': Exp,
     'Expand': None,
     'EyeLike': None,
     'Flatten': None,
     'Floor': None,
     'GRU': None,
-    'Gather': None,
+    'Gather': Gather,
     'GatherElements': None,
     'GatherND': None,
     'Gemm': None,
@@ -131,9 +241,9 @@ opset = {
     'IsNaN': None,
     'LRN': None,
     'LSTM': None,
-    'LeakyRelu': None,
+    'LeakyRelu': LeakyRelu,
     'Less': None,
-    'Log': None,
+    'Log': Log,
     'Loop': None,
     'LpNormalization': None,
     'LpPool': None,
@@ -146,7 +256,7 @@ opset = {
     'Mean': None,
     'Min': None,
     'Mod': None,
-    'Mul': None,
+    'Mul': Mul,
     'Multinomial': None,
     'Neg': None,
     'NonMaxSuppression': None,
@@ -178,7 +288,7 @@ opset = {
     'ReduceSumSquare': None,
     'Relu': Relu,
     'Reshape': Reshape,
-    'Resize': None,
+    'Resize': Resize,
     'ReverseSequence': None,
     'RoiAlign': None,
     'Round': None,
@@ -193,18 +303,18 @@ opset = {
     'SequenceErase': None,
     'SequenceInsert': None,
     'SequenceLength': None,
-    'Shape': None,
+    'Shape': Shape,
     'Shrink': None,
-    'Sigmoid': None,
+    'Sigmoid': Sigmoid,
     'Sign': None,
     'Sin': None,
     'Sinh': None,
     'Size': None,
-    'Slice': None,
+    'Slice': Slice,
     'Softplus': None,
     'Softsign': None,
     'SpaceToDepth': None,
-    'Split': None,
+    'Split': Split,
     'SplitToSequence': None,
     'Sqrt': None,
     'Squeeze': None,
@@ -212,12 +322,12 @@ opset = {
     'Sub': None,
     'Sum': None,
     'Tan': None,
-    'Tanh': None,
+    'Tanh': Tanh ,
     'TfIdfVectorizer': None,
     'ThresholdedRelu': None,
     'Tile': None,
     'TopK': None,
-    'Transpose': None,
+    'Transpose': Transpose,
     'Trilu': None,
     'Unique': None,
     'Unsqueeze': None,
@@ -226,7 +336,7 @@ opset = {
     'Xor': None,
     'Function': None,
     'Celu': None,
-    'DynamicQuantizeLinear': None,
+    'DynamicQuantizkeLinear': None,
     'GreaterOrEqual': None,
     'HardSwish': None,
     'LessOrEqual': None,
@@ -279,13 +389,13 @@ argcount = {
     'Elu': None,
     'Equal': None,
     'Erf': None,
-    'Exp': None,
+    'Exp': [1, 1],
     'Expand': None,
     'EyeLike': None,
     'Flatten': None,
     'Floor': None,
     'GRU': None,
-    'Gather': None,
+    'Gather': [2, 2],
     'GatherElements': None,
     'GatherND': None,
     'Gemm': None,
@@ -302,9 +412,9 @@ argcount = {
     'IsNaN': None,
     'LRN': None,
     'LSTM': None,
-    'LeakyRelu': None,
+    'LeakyRelu': [1, 1],
     'Less': None,
-    'Log': None,
+    'Log': [1, 1],
     'Loop': None,
     'LpNormalization': None,
     'LpPool': None,
@@ -317,7 +427,7 @@ argcount = {
     'Mean': None,
     'Min': None,
     'Mod': None,
-    'Mul': None,
+    'Mul': [2, 2],
     'Multinomial': None,
     'Neg': None,
     'NonMaxSuppression': None,
@@ -349,7 +459,7 @@ argcount = {
     'ReduceSumSquare': None,
     'Relu': [1, 1],
     'Reshape': [2, 2],
-    'Resize': None,
+    'Resize': [1, 4],
     'ReverseSequence': None,
     'RoiAlign': None,
     'Round': None,
@@ -364,18 +474,18 @@ argcount = {
     'SequenceErase': None,
     'SequenceInsert': None,
     'SequenceLength': None,
-    'Shape': None,
+    'Shape': [1, 1],
     'Shrink': None,
-    'Sigmoid': None,
+    'Sigmoid': [1, 1],
     'Sign': None,
     'Sin': None,
     'Sinh': None,
     'Size': None,
-    'Slice': None,
+    'Slice': [3, 5],
     'Softplus': None,
     'Softsign': None,
     'SpaceToDepth': None,
-    'Split': None,
+    'Split': [1, 2],
     'SplitToSequence': None,
     'Sqrt': None,
     'Squeeze': None,
@@ -383,12 +493,12 @@ argcount = {
     'Sub': None,
     'Sum': None,
     'Tan': None,
-    'Tanh': None,
+    'Tanh': [1, 1],
     'TfIdfVectorizer': None,
     'ThresholdedRelu': None,
     'Tile': None,
     'TopK': None,
-    'Transpose': None,
+    'Transpose': [1, 1],
     'Trilu': None,
     'Unique': None,
     'Unsqueeze': None,
@@ -456,7 +566,7 @@ attrset = {
     'Flatten': [ ],
     'Floor': [ ],
     'GRU': [ ],
-    'Gather': [ ],
+    'Gather': [ _int('axis', 0) ],
     'GatherElements': [ ],
     'GatherND': [ ],
     'Gemm': [ ],
@@ -473,7 +583,7 @@ attrset = {
     'IsNaN': [ ],
     'LRN': [ ],
     'LSTM': [ ],
-    'LeakyRelu': [ ],
+    'LeakyRelu': [ _float('alpha', 0.01) ],
     'Less': [ ],
     'Log': [ ],
     'Loop': [ ],
@@ -521,7 +631,13 @@ attrset = {
     'ReduceSumSquare': [ ],
     'Relu': [ ],
     'Reshape': [ _int('allowzero', 0) ],
-    'Resize': [ ],
+    'Resize': [ _string('coordinate_transformation_mode', 'half_pixel'),
+                _float('cubic_coeff_a', -0.75),
+                _int('exclude_outside', 0),
+                _float('extrapolation_value', 0.0),
+                _string('mode', 'nearest'),
+                _string('nearest_mode', 'round_prefer_floor'),
+               ],
     'ReverseSequence': [ ],
     'RoiAlign': [ ],
     'Round': [ ],
@@ -547,7 +663,7 @@ attrset = {
     'Softplus': [ ],
     'Softsign': [ ],
     'SpaceToDepth': [ ],
-    'Split': [ ],
+    'Split': [ _int('axis', 0) ],
     'SplitToSequence': [ ],
     'Sqrt': [ ],
     'Squeeze': [ ],
@@ -560,7 +676,7 @@ attrset = {
     'ThresholdedRelu': [ ],
     'Tile': [ ],
     'TopK': [ ],
-    'Transpose': [ ],
+    'Transpose': [ _ints('perm', []) ],
     'Trilu': [ ],
     'Unique': [ ],
     'Unsqueeze': [ ],

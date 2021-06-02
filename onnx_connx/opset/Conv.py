@@ -33,7 +33,7 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
 # W: (M x C/group x kH x kW) M is number of feature Map
 # B: (M)
 # Y: (M x ( C x M ) x ...
-def Conv(X, W, B, auto_pad, dilations, group, kernel_shape, pads, strides):
+def Conv(output_count, X, W, B, auto_pad, dilations, group, kernel_shape, pads, strides):
     # feature dimension
     feature_dim = len(X.shape) - 2
     feature_shape = X.shape[2:]

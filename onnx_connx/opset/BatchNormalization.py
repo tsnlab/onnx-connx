@@ -2,7 +2,7 @@
 import numpy as np
 
 
-def BatchNormalization(X, scale, B, input_mean, input_var, epsilon, momentum, training_mode):    
+def BatchNormalization(output_count, X, scale, B, input_mean, input_var, epsilon, momentum, training_mode):    
     dims_x = len(X.shape)
     dim_ones = (1,) * (dims_x - 2)
     scale = scale.reshape(-1, *dim_ones)
