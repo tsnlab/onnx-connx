@@ -37,6 +37,7 @@ def ArgMax(output_count, data, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
+
 def ArgMin(output_count, data, axis, keepdims, select_last_index):
     if select_last_index == 1:
          data = np.flip(data, axis)
@@ -50,11 +51,18 @@ def ArgMin(output_count, data, axis, keepdims, select_last_index):
 
     return result.astype(np.int64)
 
+
+def Asin(output_count, input):
+    return np.arcsin(input)
+
+
 def MatMul(output_count, A, B):
+
     return np.matmul(A, B)
 
 def Relu(output_count, X):
     return np.clip(X, 0, np.inf)
+
 
 def Reshape(ouput_count, data, shape, allowzero):
     new_shape = np.copy(shape)
@@ -179,7 +187,7 @@ opset = {
     'And': And,
     'ArgMax': ArgMax,
     'ArgMin': ArgMin,
-    'Asin': None,
+    'Asin': Asin,
     'Asinh': None,
     'Atan': None,
     'Atanh': None,
