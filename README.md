@@ -30,7 +30,11 @@ pytest --workers `(nproc)` --tests-per-worker auto
 ```
 
 # Convert example onnxs to connx
-make all
+## Convert all test cases that connx supports
+make convert
+
+## Convert individual test case
+bin/convert [onnx test case path] [connx test case path]
 
 # Users
 ## Install onnx-connx via pip
