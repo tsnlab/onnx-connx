@@ -183,15 +183,15 @@ class Graph:
         if len(input) < argcount[0]:
             raise Exception('op_type {} must have at least {} args but {}'.format(op_type, argcount[0], len(input)))
 
+        args = [output_count]
         if argcount[1] != -1: # argcount[1] == -1 means maximum argument count will be unlimited
-            args = []
             for i in range(argcount[1]):
                 if i < len(input):
                     args.append(self.value_info[input[i]])
                 else:
                     args.append(None)
         else:
-            args = [ self.value_info[id] for id in input ]
+            args = args.extend([ self.value_info[id] for id in input ])
 
         args.extend(attribute)
 

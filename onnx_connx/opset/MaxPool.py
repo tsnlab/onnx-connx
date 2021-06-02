@@ -2,8 +2,9 @@ import numpy as np
 from .util import Iterator
 from .util import _index_to_offset
 
+
 # X: [DATA_BATCH, DATA_CHANNEL, DATA_FEATURE, DATA_FEATURE ...]
-def MaxPool(X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides):
+def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides):
     # feature dimension
     feature_dim = len(X.shape) - 2
     feature_shape = X.shape[2:]
