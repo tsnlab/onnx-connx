@@ -191,7 +191,7 @@ class Graph:
                 else:
                     args.append(None)
         else:
-            args = args.extend([ self.value_info[id] for id in input ])
+            args.extend([ self.value_info[id] for id in input ])
 
         args.extend(attribute)
 
