@@ -6,7 +6,6 @@ from .util import _index_to_offset
 import sys
 # X: [DATA_BATCH, DATA_CHANNEL, DATA_FEATURE, DATA_FEATURE ...]
 def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides):
-    #print('output_count:', output_count)
     # feature dimension
     feature_dim = len(X.shape) - 2
     feature_shape = X.shape[2:]
@@ -53,14 +52,6 @@ def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads,
                 else:
                     pads[i] += 1
 
-    #print('X.shape', X.shape)
-    #print('dilations', dilations)
-    #print('kernel_shape', kernel_shape)
-    #print('pads', pads)
-    #print('strides', strides)
-    #print('ceil_mode', ceil_mode)
-    #print('Y.shape', output_shape)
-
     # MaxPool
     X_flatten = X.reshape(-1)
     Y = np.zeros([ X.shape[0] * X.shape[1] * int(np.prod(output_shape)) ], dtype=X.dtype)
@@ -94,14 +85,14 @@ def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads,
                     if (d_idx < 0).any() or (d_idx >= feature_shape).any():
                         continue
 
-                    # Get x in index (below 2 lines are numpy trick)
+                    # Get x at index
                     d_offset = _index_to_offset(d_idx, feature_shape)
                     x = X_flatten[batch * batch_unit + channel * channel_unit + d_offset]
 
                     # get maximum y
                     if y is None or x > y:
                         y = x
-                        argmax_idx = d_offset
+                        argmax_idx = d_offset#_index_to_offset(d_idx, feature_shape)
 
                 Y[y_idx] = y
 
@@ -115,7 +106,6 @@ def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads,
 
                 y_idx += 1
 
-    ##print(output_shape)
     y_shape = X.shape[0:2] + tuple(output_shape)
 
     Y = Y.reshape(y_shape)
