@@ -27,8 +27,6 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
         Y[y_idx] += y
         y_idx += 1
 
-    return y_idx
-
 # X: (N x C x H x W) N - batch, C - channel, H, W - feature 1, 2
 # W: (M x C/group x kH x kW) M is number of feature Map
 # B: (M)
