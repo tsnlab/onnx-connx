@@ -1,12 +1,16 @@
 import numpy as np
 from .util import Iterator
-
-def _get(data, idx1, idx2, rest):
-    idx = ((idx1,), (idx2,)) + tuple([ [i] for i in rest ])
-    return data[idx][0]
+from .util import _index_to_offset
 
 def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_map, dilations):
     feature_shape = X.shape[2:]
+    kernel_shape = W.shape[2:]
+
+    X_flatten = X.reshape(-1)
+    W_flatten = W.reshape(-1)
+
+    x_base = batch * np.product(X.shape[1:]) + x_channel * np.product(X.shape[2:])
+    w_base = feature_map * np.product(W.shape[1:]) + w_channel * np.product(W.shape[2:])
 
     while x_iter.next():
         x_idx = x_iter.index
@@ -19,8 +23,13 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
             if (d_idx < 0).any() or (d_idx >= feature_shape).any():
                 continue
 
-            x = _get(X, batch, x_channel, d_idx)
-            w = _get(W, feature_map, w_channel, w_idx)
+            # Get x at index
+            d_offset = _index_to_offset(d_idx, feature_shape)
+            x = X_flatten[x_base + d_offset]
+            
+            # Get w at index
+            w_offset = _index_to_offset(w_idx, kernel_shape)
+            w = W_flatten[w_base + w_offset]
 
             y += x * w
 

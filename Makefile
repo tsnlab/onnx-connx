@@ -19,21 +19,21 @@ clean:
 
 convert: # Convert onnx test case to connx
 	# Asin
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_asin_example  ../connx/test/data/node/test_asin_example 
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_asin          ../connx/test/data/node/test_asin         
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_asin_example  ../connx/test/data/node/test_asin_example 
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_asin          ../connx/test/data/node/test_asin         
 	# Add
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_add_size1_singleton_broadcast ../connx/test/data/pytorch-operator/test_operator_add_size1_singleton_broadcast 
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_add_size1_right_broadcast     ../connx/test/data/pytorch-operator/test_operator_add_size1_right_broadcast     
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_add_broadcast                 ../connx/test/data/pytorch-operator/test_operator_add_broadcast                 
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_add_size1_broadcast           ../connx/test/data/pytorch-operator/test_operator_add_size1_broadcast           
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_add_uint8                                          ../connx/test/data/node/test_add_uint8                                          
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_add_bcast                                          ../connx/test/data/node/test_add_bcast                                          
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_add                                                ../connx/test/data/node/test_add                                                
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_add_size1_singleton_broadcast ../connx/test/data/pytorch-operator/test_operator_add_size1_singleton_broadcast 
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_add_size1_right_broadcast     ../connx/test/data/pytorch-operator/test_operator_add_size1_right_broadcast     
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_add_broadcast                 ../connx/test/data/pytorch-operator/test_operator_add_broadcast                 
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_add_size1_broadcast           ../connx/test/data/pytorch-operator/test_operator_add_size1_broadcast           
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_add_uint8                                          ../connx/test/data/node/test_add_uint8                                          
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_add_bcast                                          ../connx/test/data/node/test_add_bcast                                          
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_add                                                ../connx/test/data/node/test_add                                                
 	# Sub
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_sub         ../connx/test/data/node/test_sub        
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_sub_example ../connx/test/data/node/test_sub_example
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_sub_bcast   ../connx/test/data/node/test_sub_bcast  
-	bin/convert ~/venv/lib/python3.6/site-packages/onnx/backend/test/data/node/test_sub_uint8   ../connx/test/data/node/test_sub_uint8  
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_sub         ../connx/test/data/node/test_sub        
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_sub_example ../connx/test/data/node/test_sub_example
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_sub_bcast   ../connx/test/data/node/test_sub_bcast  
+	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/node/test_sub_uint8   ../connx/test/data/node/test_sub_uint8  
 	# MaxPool
 	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/pytorch-operator/test_operator_maxpool                   ../connx/test/data/pytorch-operator/test_operator_maxpool
 	bin/convert ~/venv/lib/python3.8/site-packages/onnx/backend/test/data/pytorch-converted/test_MaxPool2d                         ../connx/test/data/pytorch-converted/test_MaxPool2d
