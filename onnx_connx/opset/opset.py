@@ -123,7 +123,7 @@ def Mul(output_count, A, B):
 
 
 def Shape(output_count, data):
-    return np.array(data.shape)
+    return np.array(data.shape, dtype=np.int64)
 
 
 def Sigmoid(output_count, X):
