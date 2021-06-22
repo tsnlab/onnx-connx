@@ -109,6 +109,22 @@ def Gather(output_count, data, indices, axis):
     """
     return np.take(data,indices, axis)
 
+def Identity(output_count, input):
+    r"""
+    :param input: Input tensor.
+
+    input type constraints
+        tensor(uint8), tensor(uint16), tensor(uint32), tensor(uint64), tensor(int8), tensor(int16),
+        tensor(int32), tensor(int64), tensor(bfloat16), tensor(float16), tensor(float), tensor(double),
+        tensor(string), tensor(bool), tensor(complex64), tensor(complex128), seq(tensor(uint8)),
+        seq(tensor(uint16)), seq(tensor(uint32)), seq(tensor(uint64)), seq(tensor(int8)), seq(tensor(int16)),
+        seq(tensor(int32)), seq(tensor(int64)), seq(tensor(float16)), seq(tensor(float)), seq(tensor(double)),
+        seq(tensor(string)), seq(tensor(bool)), seq(tensor(complex64)), seq(tensor(complex128))
+    """
+    if type(input) == list:
+        return [np.copy(i) for i in input]
+    else:
+        return np.copy(input)
 
 def LeakyRelu(ouput_count, X, alpha):
     return np.clip(X, 0, np.inf) + np.clip(X, -np.inf, 0) * alpha
@@ -234,7 +250,7 @@ opset = {
     'Greater': None,
     'HardSigmoid': None,
     'Hardmax': None,
-    'Identity': None,
+    'Identity': Identity,
     'If': None,
     'InstanceNormalization': None,
     'IsInf': None,
@@ -335,7 +351,6 @@ opset = {
     'Where': None,
     'Xor': None,
     'Function': None,
-    'Celu': None,
     'DynamicQuantizeLinear': None,
     'GreaterOrEqual': None,
     'HardSwish': None,
@@ -405,7 +420,7 @@ argcount = {
     'Greater': None,
     'HardSigmoid': None,
     'Hardmax': None,
-    'Identity': None,
+    'Identity': [1, 1],
     'If': None,
     'InstanceNormalization': None,
     'IsInf': None,
@@ -506,7 +521,6 @@ argcount = {
     'Where': None,
     'Xor': None,
     'Function': None,
-    'Celu': None,
     'DynamicQuantizeLinear': None,
     'GreaterOrEqual': None,
     'HardSwish': None,
@@ -684,7 +698,6 @@ attrset = {
     'Where': [ ],
     'Xor': [ ],
     'Function': [ ],
-    'Celu': [ ],
     'DynamicQuantizeLinear': [ ],
     'GreaterOrEqual': [ ],
     'HardSwish': [ ],
