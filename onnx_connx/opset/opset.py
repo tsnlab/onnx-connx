@@ -112,16 +112,14 @@ def Flatten(output_count, input, axis):
     if axis < 0:
         axis = len(input.shape) + axis
 
-    count = 0
     front = 1
     end = 1
     if axis != 0:
-        for x in input.shape:
-            if count >= axis:
-                end *= x
+        for i in range(0, len(input.shape)):
+            if i >= axis:
+                end *= input.shape[i]
             else:
-                front *= x
-            count += 1
+                front *= input.shape[i]
         return input.reshape(front, end)
     else:
         flatten = 1
