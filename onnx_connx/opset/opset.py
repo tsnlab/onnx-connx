@@ -99,6 +99,34 @@ def Exp(output_count, input):
     return np.exp(input)
 
 
+def Flatten(output_count, input, axis):
+    r"""
+        :param input: A Tensor of rank >= axis.
+        :param axis: Indicate up to which input dimensions (exclusive) should be flattened to the outer dimension of the output.
+
+        input type constraints
+            tensor(uint8), tensor(uint16), tensor(uint32), tensor(uint64), tensor(int8), tensor(int16),
+            tensor(int32), tensor(int64), tensor(bfloat16), tensor(float16), tensor(float), tensor(double),
+            tensor(string), tensor(bool), tensor(complex64), tensor(complex128)
+    """
+    if axis < 0:
+        axis = len(input.shape) + axis
+
+    front = 1
+    end = 1
+    if axis != 0:
+        for i in range(0, len(input.shape)):
+            if i >= axis:
+                end *= input.shape[i]
+            else:
+                front *= input.shape[i]
+        return input.reshape(front, end)
+    else:
+        flatten = 1
+        for x in input.shape:
+            flatten *= x
+        return np.array([input.reshape(flatten)])
+
 def Gather(output_count, data, indices, axis):
     r"""
     :param data: Tensor of rank r >= 1.
@@ -237,7 +265,7 @@ opset = {
     'Exp': Exp,
     'Expand': None,
     'EyeLike': None,
-    'Flatten': None,
+    'Flatten': Flatten,
     'Floor': None,
     'GRU': None,
     'Gather': Gather,
@@ -407,7 +435,7 @@ argcount = {
     'Exp': [1, 1],
     'Expand': None,
     'EyeLike': None,
-    'Flatten': None,
+    'Flatten': [1, 1],
     'Floor': None,
     'GRU': None,
     'Gather': [2, 2],
@@ -577,7 +605,7 @@ attrset = {
     'Exp': [ ],
     'Expand': [ ],
     'EyeLike': [ ],
-    'Flatten': [ ],
+    'Flatten': [ _int('axis', 1)],
     'Floor': [ ],
     'GRU': [ ],
     'Gather': [ _int('axis', 0) ],
