@@ -1,16 +1,50 @@
 import numpy as np
 from .util import Iterator
 
+import time
+
+
 def _get(data, idx1, idx2, rest):
     idx = ((idx1,), (idx2,)) + tuple([ [i] for i in rest ])
     return data[idx][0]
 
+
 def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_map, dilations):
+    feature_dim = len(X.shape) - 2
     feature_shape = X.shape[2:]
+    kernel_shape = W.shape[2:]
+
+    ksize = dilations * np.array(kernel_shape)
+    if dilations[0] != 1:
+        ksize -= np.ones([feature_dim], dtype=np.int64)
+    kernel = np.zeros(ksize, dtype=W.dtype)
+
+    slicer = []
+    for i in range(feature_dim):
+        slicer.append(slice(None, None, dilations[i]))
+    
+    kernel[tuple(slicer)] = W[batch, w_channel]
+    x_patch = X[batch, x_channel]
+    
+    # print()
+    # print(x_patch)
 
     while x_iter.next():
         x_idx = x_iter.index
+        """
+        s1 = 0 if x_idx[0] < 0 else x_idx[0]
+        s2 = 0 if x_idx[1] < 0 else x_idx[1]
+        e1 = min(x_patch.shape[0], x_idx[0] + kernel.shape[0])
+        e2 = min(x_patch.shape[1], x_idx[1] + kernel.shape[1])
+        x_patch = x_patch[s1:e1, s2:e2]
 
+        print("x idx ", x_idx)
+        print(f"{s1}:{e1} {s2}:{e2}", x_patch.shape[1], kernel.shape[1])
+        print(x_patch)
+        
+        y = np.sum(x_patch.flatten() * kernel.flatten())
+        """
+        
         y = 0
         while w_iter.next():
             w_idx = w_iter.index # absolute weight index
@@ -23,21 +57,24 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
             w = _get(W, feature_map, w_channel, w_idx)
 
             y += x * w
-
+        
         Y[y_idx] += y
         y_idx += 1
 
+    print(Y)
     return y_idx
+
 
 # X: (N x C x H x W) N - batch, C - channel, H, W - feature 1, 2
 # W: (M x C/group x kH x kW) M is number of feature Map
 # B: (M)
 # Y: (M x ( C x M ) x ...
 def Conv(output_count, X, W, B, auto_pad, dilations, group, kernel_shape, pads, strides):
+    start = time.time()
     # feature dimension
     feature_dim = len(X.shape) - 2
     feature_shape = X.shape[2:]
-    
+
     # default attribute setting
     if len(dilations) == 0:
         dilations = np.ones([ feature_dim ], dtype=np.int64)
@@ -71,7 +108,8 @@ def Conv(output_count, X, W, B, auto_pad, dilations, group, kernel_shape, pads, 
                     pads[i] += 1
     else:
         for i in range(feature_dim):
-            output_shape[i] = np.floor((X.shape[2 + i] + pads[i] + pads[i + feature_dim] - ((kernel_shape[i] - 1) * dilations[i] + 1)) / strides[i] + 1)
+            output_shape[i] = np.floor((X.shape[2 + i] + pads[i] + pads[i + feature_dim] 
+                - ((kernel_shape[i] - 1) * dilations[i] + 1)) / strides[i] + 1)
 
     # Conv
     Y = np.zeros([ X.shape[0] * W.shape[0] * int(np.prod(output_shape)) ], dtype=X.dtype)
@@ -99,4 +137,5 @@ def Conv(output_count, X, W, B, auto_pad, dilations, group, kernel_shape, pads, 
     y_shape = ( X.shape[0], W.shape[0] ) + tuple(output_shape)
     Y = Y.reshape(y_shape)
 
+    print(f"takes {time.time() - start}")
     return Y
