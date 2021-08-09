@@ -3,7 +3,6 @@ from .util import Iterator
 
 import time
 
-
 def _get(data, idx1, idx2, rest):
     idx = ((idx1,), (idx2,)) + tuple([ [i] for i in rest ])
     return data[idx][0]
