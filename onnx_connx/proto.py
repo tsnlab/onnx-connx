@@ -4,6 +4,7 @@ import itertools
 import onnx
 from onnx import numpy_helper
 from .opset import get_attrset
+import struct
 
 class ConnxObject:
     def __init__(self, proto=None, parent=None):
@@ -267,32 +268,34 @@ class ConnxGraphProto(ConnxObject):
             node.dump(depth + 2)
 
     def compile(self, path):
-        # Write data - [graph_id].[tensor_id]_[data_type]_[len(dim)](_[dim0])*.data
+        # Write data - [graph_id]_[tensor_id]*.data
         def tensor_name(tensor, array):
-            path = '{}_{}_{}_{}'.format(str(self.id), str(tensor.id), 
-                                        str(tensor.proto.data_type), str(len(tensor.proto.dims)))
-            for i in range(len(tensor.proto.dims)):
-                path += '_'
-                path += str(tensor.proto.dims[i])
-            path += '.data'
+            return '{}_{}.data'.format(str(self.id), str(tensor.id))
 
-            return path
+        def write(out, tensor, array):
+            out.write(struct.pack('=I', tensor.proto.data_type)) # dtype
+            out.write(struct.pack('=I', len(tensor.proto.dims))) # ndim
+
+            for i in range(len(tensor.proto.dims)): # dims
+                out.write(struct.pack('=I', tensor.proto.dims[i]))
+
+            buf = array.tobytes()
+            out.write(buf)
 
         for initializer in self.initializer:
             array = numpy_helper.to_array(initializer.proto)
             name = tensor_name(initializer, array)
 
-            with open(os.path.join(path, name), 'wb') as data_out:
-                buf = array.tobytes()
-                data_out.write(buf)
+            with open(os.path.join(path, name), 'wb') as out:
+                write(out, initializer, array)
 
         for sparse_initializer in self.sparse_initializer:
             array = numpy_helper.to_array(sparse_initializer.proto)
             name = tensor_name(sparse_initializer, array)
 
+            # TODO: Compress array
             with open(os.path.join(path, name), 'wb') as data_out:
-                buf = array.tobytes()
-                data_out.write(buf)
+                write(initializer, array)
 
         # graph name
         with open(os.path.join(path, str(self.id) + '.text'), 'w') as out:

@@ -99,6 +99,34 @@ def Exp(output_count, input):
     return np.exp(input)
 
 
+def Flatten(output_count, input, axis):
+    r"""
+        :param input: A Tensor of rank >= axis.
+        :param axis: Indicate up to which input dimensions (exclusive) should be flattened to the outer dimension of the output.
+
+        input type constraints
+            tensor(uint8), tensor(uint16), tensor(uint32), tensor(uint64), tensor(int8), tensor(int16),
+            tensor(int32), tensor(int64), tensor(bfloat16), tensor(float16), tensor(float), tensor(double),
+            tensor(string), tensor(bool), tensor(complex64), tensor(complex128)
+    """
+    if axis < 0:
+        axis = len(input.shape) + axis
+
+    front = 1
+    end = 1
+    if axis != 0:
+        for i in range(0, len(input.shape)):
+            if i >= axis:
+                end *= input.shape[i]
+            else:
+                front *= input.shape[i]
+        return input.reshape(front, end)
+    else:
+        flatten = 1
+        for x in input.shape:
+            flatten *= x
+        return np.array([input.reshape(flatten)])
+
 def Gather(output_count, data, indices, axis):
     r"""
     :param data: Tensor of rank r >= 1.
@@ -109,6 +137,22 @@ def Gather(output_count, data, indices, axis):
     """
     return np.take(data,indices, axis)
 
+def Identity(output_count, input):
+    r"""
+    :param input: Input tensor.
+
+    input type constraints
+        tensor(uint8), tensor(uint16), tensor(uint32), tensor(uint64), tensor(int8), tensor(int16),
+        tensor(int32), tensor(int64), tensor(bfloat16), tensor(float16), tensor(float), tensor(double),
+        tensor(string), tensor(bool), tensor(complex64), tensor(complex128), seq(tensor(uint8)),
+        seq(tensor(uint16)), seq(tensor(uint32)), seq(tensor(uint64)), seq(tensor(int8)), seq(tensor(int16)),
+        seq(tensor(int32)), seq(tensor(int64)), seq(tensor(float16)), seq(tensor(float)), seq(tensor(double)),
+        seq(tensor(string)), seq(tensor(bool)), seq(tensor(complex64)), seq(tensor(complex128))
+    """
+    if type(input) == list:
+        return [np.copy(i) for i in input]
+    else:
+        return np.copy(input)
 
 def LeakyRelu(ouput_count, X, alpha):
     return np.clip(X, 0, np.inf) + np.clip(X, -np.inf, 0) * alpha
@@ -123,7 +167,7 @@ def Mul(output_count, A, B):
 
 
 def Shape(output_count, data):
-    return np.array(data.shape)
+    return np.array(data.shape, dtype=np.int64)
 
 
 def Sigmoid(output_count, X):
@@ -221,7 +265,7 @@ opset = {
     'Exp': Exp,
     'Expand': None,
     'EyeLike': None,
-    'Flatten': None,
+    'Flatten': Flatten,
     'Floor': None,
     'GRU': None,
     'Gather': Gather,
@@ -234,7 +278,7 @@ opset = {
     'Greater': None,
     'HardSigmoid': None,
     'Hardmax': None,
-    'Identity': None,
+    'Identity': Identity,
     'If': None,
     'InstanceNormalization': None,
     'IsInf': None,
@@ -335,8 +379,7 @@ opset = {
     'Where': None,
     'Xor': None,
     'Function': None,
-    'Celu': None,
-    'DynamicQuantizkeLinear': None,
+    'DynamicQuantizeLinear': None,
     'GreaterOrEqual': None,
     'HardSwish': None,
     'LessOrEqual': None,
@@ -392,7 +435,7 @@ argcount = {
     'Exp': [1, 1],
     'Expand': None,
     'EyeLike': None,
-    'Flatten': None,
+    'Flatten': [1, 1],
     'Floor': None,
     'GRU': None,
     'Gather': [2, 2],
@@ -405,7 +448,7 @@ argcount = {
     'Greater': None,
     'HardSigmoid': None,
     'Hardmax': None,
-    'Identity': None,
+    'Identity': [1, 1],
     'If': None,
     'InstanceNormalization': None,
     'IsInf': None,
@@ -506,7 +549,6 @@ argcount = {
     'Where': None,
     'Xor': None,
     'Function': None,
-    'Celu': None,
     'DynamicQuantizeLinear': None,
     'GreaterOrEqual': None,
     'HardSwish': None,
@@ -563,7 +605,7 @@ attrset = {
     'Exp': [ ],
     'Expand': [ ],
     'EyeLike': [ ],
-    'Flatten': [ ],
+    'Flatten': [ _int('axis', 1)],
     'Floor': [ ],
     'GRU': [ ],
     'Gather': [ _int('axis', 0) ],
@@ -684,7 +726,6 @@ attrset = {
     'Where': [ ],
     'Xor': [ ],
     'Function': [ ],
-    'Celu': [ ],
     'DynamicQuantizeLinear': [ ],
     'GreaterOrEqual': [ ],
     'HardSwish': [ ],

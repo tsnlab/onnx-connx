@@ -1,11 +1,6 @@
 import numpy as np
 from .util import Iterator
-
-import time
-
-def _get(data, idx1, idx2, rest):
-    idx = ((idx1,), (idx2,)) + tuple([ [i] for i in rest ])
-    return data[idx][0]
+from .util import _index_to_offset
 
 
 def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_map, dilations):
@@ -13,36 +8,14 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
     feature_shape = X.shape[2:]
     kernel_shape = W.shape[2:]
 
-    ksize = dilations * np.array(kernel_shape)
-    if dilations[0] != 1:
-        ksize -= np.ones([feature_dim], dtype=np.int64)
-    kernel = np.zeros(ksize, dtype=W.dtype)
+    X_flatten = X.reshape(-1)
+    W_flatten = W.reshape(-1)
 
-    slicer = []
-    for i in range(feature_dim):
-        slicer.append(slice(None, None, dilations[i]))
-    
-    kernel[tuple(slicer)] = W[batch, w_channel]
-    x_patch = X[batch, x_channel]
-    
-    # print()
-    # print(x_patch)
+    x_base = batch * np.product(X.shape[1:]) + x_channel * np.product(X.shape[2:])
+    w_base = feature_map * np.product(W.shape[1:]) + w_channel * np.product(W.shape[2:])
 
     while x_iter.next():
         x_idx = x_iter.index
-        
-        s1 = 0 if x_idx[0] < 0 else x_idx[0]
-        s2 = 0 if x_idx[1] < 0 else x_idx[1]
-        e1 = min(x_patch.shape[0], x_idx[0] + kernel.shape[0])
-        e2 = min(x_patch.shape[1], x_idx[1] + kernel.shape[1])
-        x_patch = x_patch[s1:e1, s2:e2]
-
-        print("x idx ", x_idx)
-        print(f"{s1}:{e1} {s2}:{e2}", x_patch.shape[1], kernel.shape[1])
-        print(x_patch)
-        
-        y = np.sum(x_patch.flatten() * kernel.flatten())
-        
         y = 0
         while w_iter.next():
             w_idx = w_iter.index # absolute weight index
@@ -51,16 +24,18 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
             if (d_idx < 0).any() or (d_idx >= feature_shape).any():
                 continue
 
-            x = _get(X, batch, x_channel, d_idx)
-            w = _get(W, feature_map, w_channel, w_idx)
+            # Get x at index
+            d_offset = _index_to_offset(d_idx, feature_shape)
+            x = X_flatten[x_base + d_offset]
+            
+            # Get w at index
+            w_offset = _index_to_offset(w_idx, kernel_shape)
+            w = W_flatten[w_base + w_offset]
 
             y += x * w
         
         Y[y_idx] += y
         y_idx += 1
-
-    print(Y)
-    return y_idx
 
 
 # X: (N x C x H x W) N - batch, C - channel, H, W - feature 1, 2

@@ -1,6 +1,7 @@
 import os
 from glob import glob
 import numpy as np
+import struct
 from .opset import get_opset, get_argcount
 
 class Graph:
@@ -18,6 +19,7 @@ class Graph:
 
         self.__read_text()
         self.__read_initializer()
+        # TODO: read_sparse_initializer
 
     def interprete(self, inputs):
         self._value_info(self.text[0])
@@ -50,31 +52,26 @@ class Graph:
         count = int(tokens.pop(0))
 
         for i in range(1, count + 1):
-            file_path = glob(os.path.join(self.path, '{}_{}_*.data'.format(self.graph_id, i)))[0]
-            data_id, data = self.__read_data(file_path)
-            self.initializer.append(data)
+            file_path = os.path.join(self.path, '{}_{}.data'.format(self.graph_id, i))
+            tensor = self.__read_tensor(file_path)
+            self.initializer.append(tensor)
 
-    def __read_data(self, path):
-        tokens = os.path.basename(path).strip('.data').split('_')
-
-        tokens.pop(0)
-        data_id = tokens.pop(0)
-        data_type = int(tokens.pop(0))
-        dim_len = int(tokens.pop(0))
-        dims = [ ]
-        for i in range(dim_len):
-            dims.append(int(tokens.pop(0)))
-
-        dtype = [ None, np.float32, np.uint8, np.int8, np.uint16, np.int16,
-                  np.int32, np.int64, str, bool, np.float16, np.uint32, 
-                  np.uint64, np.csingle, np.cdouble, None ][data_type]
-
-        if dtype == None:
-            raise Exception('Tensor data type {} is not supported yet'.format(data_type))
-
+    def __read_tensor(self, path):
         with open(path, 'rb') as f:
+            dtype, ndim = struct.unpack('=II', f.read(8))
+            shape = []
+            for i in range(ndim):
+                shape.append(struct.unpack('=I', f.read(4))[0])
+
+            np_dtype = ( None, np.float32, np.uint8, np.int8, np.uint16, np.int16,
+                         np.int32, np.int64, str, bool, np.float16, np.uint32, 
+                         np.uint64, np.csingle, np.cdouble, None )[dtype]
+
+            if np_dtype == None:
+                raise Exception('Tensor data type {} is not supported yet'.format(data_type))
+
             buf = f.read()
-            return data_id, np.frombuffer(buf, dtype=dtype).reshape(dims)
+            return np.frombuffer(buf, dtype=np_dtype).reshape(shape)
 
     def _value_info(self, line):
         tokens = list(line.split(' '))
