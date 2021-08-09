@@ -30,7 +30,7 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
 
     while x_iter.next():
         x_idx = x_iter.index
-        """
+        
         s1 = 0 if x_idx[0] < 0 else x_idx[0]
         s2 = 0 if x_idx[1] < 0 else x_idx[1]
         e1 = min(x_patch.shape[0], x_idx[0] + kernel.shape[0])
@@ -42,7 +42,6 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
         print(x_patch)
         
         y = np.sum(x_patch.flatten() * kernel.flatten())
-        """
         
         y = 0
         while w_iter.next():
