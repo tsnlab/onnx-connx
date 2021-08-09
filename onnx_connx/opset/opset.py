@@ -240,7 +240,7 @@ opset = {
     'BitShift': None,
     'Cast': Cast,
     'Ceil': None,
-    'Celuk': None,
+    'Celu': None,
     'Clip': None,
     'Compress': None,
     'Concat': Concat,
