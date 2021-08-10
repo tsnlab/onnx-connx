@@ -1,0 +1,29 @@
+name: Python Lint
+
+on:
+    - push
+    - pull_request
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+       uses: actions/checkout@master
+    - name: Install ubuntu packages to lint
+      run: sudo apt install flake8
+    - name: Check python lint
+      run: flake8
+
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    - name: Install ubuntu packages to build
+      run: |
+          apt install python3 python3-pip
+          pip3 install onnx
+    - name: ONNX Test Cases
+      run: |
+          make test
