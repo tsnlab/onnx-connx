@@ -23,7 +23,7 @@ jobs:
     - name: Install ubuntu packages to build
       run: |
           sudo apt-get install python3 python3-pip
-          pip3 install onnx
+          pip3 install onnx pytest
     - name: ONNX Test Cases
       run: |
           make test
