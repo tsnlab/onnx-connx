@@ -23,7 +23,7 @@ jobs:
     - name: Install ubuntu packages to build
       run: |
           sudo apt-get install python3 python3-pip
-          pip3 install protobuf onnx pytest-parallel
+          pip3 install tabulate onnx=1.9.0 pytest-parallel
     - name: ONNX Test Cases
       run: |
           make test
