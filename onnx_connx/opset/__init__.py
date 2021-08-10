@@ -20,6 +20,7 @@ _attrsets = {
     '': default_attrset
 }
 
+
 # specs: [ { domain: str, version: int } ]
 def _check(specs):
     for spec in specs:
@@ -30,16 +31,18 @@ def _check(specs):
             raise Exception('There is no such opset domain: {}, version: {}'.format(domain, version))
 
         if _versions[domain] < version:
-            raise Exception('The opset version is lower than the expected one: opset domain: {}, version: {}, expected: {}'.format(domain, _versions[domain], version))
+            raise Exception('The opset version is lower than the expected one: opset domain: {}, version: {}, '
+                            'expected: {}'.format(domain, _versions[domain], version))
+
 
 def get_opset(specs):
     _check(specs)
 
-    opset = { }
+    opset = {}
 
     for spec in specs:
         domain = spec['domain']
-        version = spec['version']
+        _ = spec['version']
 
         opsets = _opsets[domain]
 
@@ -48,14 +51,15 @@ def get_opset(specs):
 
     return opset
 
+
 def get_argcount(specs):
     _check(specs)
 
-    argcount = { }
+    argcount = {}
 
     for spec in specs:
         domain = spec['domain']
-        version = spec['version']
+        _ = spec['version']
 
         argcounts = _argcounts[domain]
 
@@ -64,14 +68,15 @@ def get_argcount(specs):
 
     return argcount
 
+
 def get_attrset(specs):
     _check(specs)
 
-    attrset = { }
+    attrset = {}
 
     for spec in specs:
         domain = spec['domain']
-        version = spec['version']
+        _ = spec['version']
 
         attrsets = _attrsets[domain]
 
@@ -81,4 +86,4 @@ def get_attrset(specs):
     return attrset
 
 
-__all__ = [ get_opset, get_argcount, get_attrset ]
+__all__ = [get_opset, get_argcount, get_attrset]

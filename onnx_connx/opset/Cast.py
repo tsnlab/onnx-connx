@@ -1,4 +1,3 @@
-#-*- coding:utf-8 -*-
 import sys
 import numpy
 
@@ -7,38 +6,38 @@ def Cast(output_count, input, to):
     r"""
     Constrain input, output tensor type.
     Castable
-        tensor(float16), tensor(float), tensor(double), 
-        tensor(int8), tensor(int16), tensor(int32), tensor(int64), 
-        tensor(uint8), tensor(uint16), tensor(uint32), tensor(uint64), 
+        tensor(float16), tensor(float), tensor(double),
+        tensor(int8), tensor(int16), tensor(int32), tensor(int64),
+        tensor(uint8), tensor(uint16), tensor(uint32), tensor(uint64),
         tensor(bool), tensor(string), tensor(bfloat16)
     """
 
     cvtTable = {
-            10 : numpy.float16,
-            1 : numpy.float32,
-            11 : numpy.double,
-            3 : numpy.int8,
-            5 : numpy.int16,
-            6 : numpy.int32,
-            7 : numpy.int64,
-            2 : numpy.uint8,
-            4 : numpy.uint16,
-            12 : numpy.uint32,
-            13 : numpy.uint64,
-            9 : bool,
-            8 : str,
-            16 : object,
+        10: numpy.float16,
+        1: numpy.float32,
+        11: numpy.double,
+        3: numpy.int8,
+        5: numpy.int16,
+        6: numpy.int32,
+        7: numpy.int64,
+        2: numpy.uint8,
+        4: numpy.uint16,
+        12: numpy.uint32,
+        13: numpy.uint64,
+        9: bool,
+        8: str,
+        16: object,
     }
 
     to_type = cvtTable[to]
     from_type = input.dtype
-    
+
     if to_type is str:
         ss = []
         for i in input.flatten():
             s = str(i).encode('utf-8')
             su = s.decode('utf-8')
-            ss.append(su)        
+            ss.append(su)
         return numpy.array(ss).astype(numpy.object).reshape(input.shape)
 
     elif from_type is object or from_type is numpy.dtype(numpy.uint16) or to_type is object:
@@ -58,5 +57,5 @@ def Cast(output_count, input, to):
 
             np_fp32_from_bfloat = np_fp32_zeros.view(dtype=numpy.float32)
             return np_fp32_from_bfloat.reshape(input.shape)
-    
+
     return input.astype(to_type)

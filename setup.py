@@ -5,7 +5,8 @@ from setuptools import setup
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
-__version_raw = subprocess.run(['git', 'describe', '--tags', '--long'], stdout=subprocess.PIPE, cwd=cwd).stdout.decode('utf-8')[1:]
+__version_raw = subprocess.run(['git', 'describe', '--tags', '--long'],
+                               stdout=subprocess.PIPE, cwd=cwd).stdout.decode('utf-8')[1:]
 __versions = __version_raw.split('-')
 __version__ = __versions[0] + '.' + __versions[1]
 

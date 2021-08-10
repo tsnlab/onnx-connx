@@ -1,13 +1,5 @@
-#-*- coding:utf-8 -*-
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import numpy as np  # type: ignore
-
-from typing import Any, List, Callable, Union, Optional, Text
+import numpy as np
+from typing import Any, List, Callable, Optional, Text
 
 
 def cartesian(arrays, out=None):
@@ -125,7 +117,7 @@ def interpolate_1d_with_x(data,                                             # ty
         x_ori += (roi[0] * (input_width - 1))
         # Return extrapolation_value directly as what TF CropAndResize does
         if x_ori < 0 or x_ori > input_width - 1:
-            return extrapolation_value    
+            return extrapolation_value
     elif coordinate_transformation_mode == 'tf_half_pixel_for_nn':
         x_ori = (x + 0.5) / scale_factor
     elif coordinate_transformation_mode == 'pytorch_half_pixel':
@@ -142,7 +134,6 @@ def interpolate_1d_with_x(data,                                             # ty
         ratio = 1
     else:
         ratio = x_ori - x_ori_int
-        
 
     coeffs = get_coeffs(ratio)
     n = len(coeffs)
@@ -228,8 +219,9 @@ def nearest_coeffs(ratio, mode='round_prefer_floor'):          # type: (float, T
     elif mode == 'ceil':
         return np.array([0, 1])
 
-        
-def Resize(output_count, X, roi, scales, sizes, coordinate_transformation_mode, cubic_coeff_a, exclude_outside, extrapolation_value, mode, nearest_mode):
+
+def Resize(output_count, X, roi, scales, sizes, coordinate_transformation_mode, cubic_coeff_a, exclude_outside,
+           extrapolation_value, mode, nearest_mode):
     if mode == "nearest":
         return interpolate_nd(X,
                               lambda x: nearest_coeffs(x, mode=nearest_mode),

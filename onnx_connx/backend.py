@@ -2,6 +2,8 @@ import os
 import argparse
 import tempfile
 import cProfile
+from typing import Tuple, Any, Text, Sequence, Dict, Optional
+import numpy
 
 from onnx import numpy_helper
 import onnx.checker
@@ -11,6 +13,7 @@ from onnx import ModelProto, NodeProto, IR_VERSION
 from .backend_rep import BackendRep
 from .compiler import compile_from_model
 from .opset import get_opset
+
 
 class Backend(object):
     @classmethod
@@ -23,13 +26,13 @@ class Backend(object):
         specs = []
         for i in range(len(model.opset_import)):
             opset_import = model.opset_import[i]
-            specs.append({ 'domain': opset_import.domain, 'version': opset_import.version })
+            specs.append({'domain': opset_import.domain, 'version': opset_import.version})
 
         opset = get_opset(specs)
 
         for i in range(len(model.graph.node)):
             if opset[model.graph.node[i].op_type] is None:
-                #print('Not supported op_type:', model.graph.node[i].op_type)
+                # print('Not supported op_type:', model.graph.node[i].op_type)
                 return False
 
         return True
@@ -89,6 +92,9 @@ class Backend(object):
         else:
             onnx.checker.check_node(node)
 
+        specs = [{'domain': '', 'version': 15}]  # temporary code, please use special_context
+        opset = get_opset(specs)
+
         output = None
 
         if node.op_type in opset:
@@ -99,7 +105,7 @@ class Backend(object):
 
     @classmethod
     def supports_device(cls, device):  # type: (Text) -> bool
-        return device in [ 'CPU', 'cpu' ]
+        return device in ['CPU', 'cpu']
 
 
 def main(args):
@@ -126,11 +132,13 @@ def main(args):
     else:
         print(outputs)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ONNX Reference Backend')
     parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
     parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
-    parser.add_argument('-o', metavar='output directory', type=str, nargs='?', help='connx output directory(default is temporary directory)')
+    parser.add_argument('-o', metavar='output directory', type=str, nargs='?',
+                        help='connx output directory(default is temporary directory)')
     parser.add_argument('-p', action='store_true', help='performance profiling')
 
     args = parser.parse_args()

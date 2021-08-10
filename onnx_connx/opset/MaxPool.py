@@ -3,42 +3,43 @@ from .util import Iterator
 from .util import _index_to_offset
 
 
-import sys
 # X: [DATA_BATCH, DATA_CHANNEL, DATA_FEATURE, DATA_FEATURE ...]
 def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides):
     # feature dimension
     feature_dim = len(X.shape) - 2
     feature_shape = X.shape[2:]
-    
+
     # default attribute setting
     if len(dilations) == 0:
-        dilations = np.ones([ feature_dim ], dtype=np.int64)
+        dilations = np.ones([feature_dim], dtype=np.int64)
     else:
         dilations = np.array(dilations)
 
     kernel_shape = np.array(kernel_shape)
 
     if len(pads) == 0:
-        pads = np.zeros([ feature_dim * 2 ], dtype=np.int64)
+        pads = np.zeros([feature_dim * 2], dtype=np.int64)
     else:
         pads = np.array(pads)
 
     if len(strides) == 0:
-        strides = np.ones([ feature_dim ], dtype=np.int64)
+        strides = np.ones([feature_dim], dtype=np.int64)
     else:
         strides = np.array(strides)
 
     # output_spatial_shape
-    output_shape = np.zeros([ feature_dim ], dtype=np.int64)
+    output_shape = np.zeros([feature_dim], dtype=np.int64)
 
     if auto_pad == 'NOTSET':
-        if ceil_mode == 0: # ceil_mode
+        if ceil_mode == 0:  # ceil_mode
             for i in range(feature_dim):
-                output_shape[i] = np.floor((X.shape[2 + i] + pads[i] + pads[i + feature_dim] - ((kernel_shape[i] - 1) * dilations[i] + 1)) / strides[i] + 1)
+                output_shape[i] = np.floor((X.shape[2 + i] + pads[i] + pads[i + feature_dim] -
+                                           ((kernel_shape[i] - 1) * dilations[i] + 1)) / strides[i] + 1)
         else:
             for i in range(feature_dim):
-                output_shape[i] = np.ceil((X.shape[2 + i] + pads[i] + pads[i + feature_dim] - ((kernel_shape[i] - 1) * dilations[i] + 1)) / strides[i] + 1)
-    elif auto_pad == 'VALID': # auto_pad(deprecated)
+                output_shape[i] = np.ceil((X.shape[2 + i] + pads[i] + pads[i + feature_dim] -
+                                          ((kernel_shape[i] - 1) * dilations[i] + 1)) / strides[i] + 1)
+    elif auto_pad == 'VALID':  # auto_pad(deprecated)
         for i in range(feature_dim):
             output_shape[i] = np.ceil((X.shape[2 + i] - ((kernel_shape[i] - 1) * dilations[i] + 1) + 1) / strides[i])
     elif auto_pad == 'SAME_LOWER' or auto_pad == 'SAME_UPPER':
@@ -54,8 +55,8 @@ def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads,
 
     # MaxPool
     X_flatten = X.reshape(-1)
-    Y = np.zeros([ X.shape[0] * X.shape[1] * int(np.prod(output_shape)) ], dtype=X.dtype)
-    Indices = np.zeros([ X.shape[0] * X.shape[1] * int(np.prod(output_shape)) ], dtype=np.int64)
+    Y = np.zeros([X.shape[0] * X.shape[1] * int(np.prod(output_shape))], dtype=X.dtype)
+    Indices = np.zeros([X.shape[0] * X.shape[1] * int(np.prod(output_shape))], dtype=np.int64)
 
     y_idx = 0
 
@@ -77,7 +78,7 @@ def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads,
                 y = None
                 argmax_idx = None
 
-                k_iter = Iterator([ 0 ] * len(kernel_shape), kernel_shape * dilations, dilations)
+                k_iter = Iterator([0] * len(kernel_shape), kernel_shape * dilations, dilations)
                 while k_iter.next():
                     k_idx = k_iter.index
                     d_idx = x_idx + k_idx
@@ -92,7 +93,7 @@ def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads,
                     # get maximum y
                     if y is None or x > y:
                         y = x
-                        argmax_idx = d_offset#_index_to_offset(d_idx, feature_shape)
+                        argmax_idx = d_offset  # _index_to_offset(d_idx, feature_shape)
 
                 Y[y_idx] = y
 

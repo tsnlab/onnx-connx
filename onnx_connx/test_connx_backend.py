@@ -1,9 +1,7 @@
 import unittest
-
 import onnx.backend.test
-
 from .backend import Backend
-from .backend_rep import BackendRep
+
 
 pytest_plugins = 'onnx.backend.test.report',
 backend_test = onnx.backend.test.runner.Runner(Backend, __name__)
