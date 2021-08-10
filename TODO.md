@@ -6,7 +6,7 @@
 [X] Relu  
 [X] Reshape  
 
-[ ] Mobilenet  
+[X] Mobilenet  
 [X] Add  
 [X] BatchNormalization  
 [X] Conv  
@@ -14,7 +14,7 @@
 [X] Relu  
 [X] Reshape  
 
-[ ] YOLO v4  
+[X] YOLO v4  
 [X] Add  
 [X] Cast  
 [X] Concat  
