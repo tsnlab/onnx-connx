@@ -16,9 +16,9 @@ python -m onnx\_connx [onnx model]
 ## Prepare development environments
  * python3
  * protobuf-compiler  # to run bin/dump utility
- * onnx               # python package
- * pytest             # python package
  * tabulate           # python package
+ * onnx               # python package
+ * pytest-parallel    # python package
 
 ```sh
 $ sudo apt install python3 python3-pip python3-venv
@@ -28,8 +28,12 @@ $ source venv/bin/activate
 $ pip install --upgrade pip
 $ pip install onnx
 ```
+## Debug installation
+```sh
+pip install git+file:///[path-to-onnx-connx]
+```
 
-## To debug
+## Dump onnx to debug
 ```sh
 onnx-connx$ bin/dump [onnx path]  # This utility will dump onnx or pb to text using protoc
 ```
