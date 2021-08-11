@@ -10,15 +10,18 @@ pip install git+https://github.com/semihlab/onnx-connx
 ```
 
 ## Convert ONNX to CONNX model
-python -m onnx\_connx [onnx model]
+```sh
+python -m onnx\_connx --help        # to get help message
+python -m onnx\_connx [onnx model]  # to convert onnx to connx
+```
 
 # For developers
 ## Prepare development environments
  * python3
+ * onnx               # python package, to run onnx2connx converter
  * protobuf-compiler  # to run bin/dump utility
- * tabulate           # python package
- * onnx               # python package
- * pytest-parallel    # python package
+ * tabulate           # python package, to run test cases
+ * pytest-parallel    # python package, to run test cases
 
 ```sh
 $ sudo apt install python3 python3-pip python3-venv
@@ -33,7 +36,7 @@ $ pip install onnx
 pip install git+file:///[path-to-onnx-connx]
 ```
 
-## Dump onnx to debug
+## Dump onnx to text
 ```sh
 onnx-connx$ bin/dump [onnx path]  # This utility will dump onnx or pb to text using protoc
 ```
