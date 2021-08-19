@@ -1,39 +1,48 @@
 import numpy as np
 from .util import Iterator
-from .util import _index_to_offset
 
 
 def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_map, dilations):
-    feature_shape = X.shape[2:]
+    feature_dim = len(X.shape) - 2
     kernel_shape = W.shape[2:]
 
-    X_flatten = X.reshape(-1)
-    W_flatten = W.reshape(-1)
+    # Make dilation kernel
+    new_kernel_shape = dilations * np.array(kernel_shape)
+    if dilations.any() != 1:
+        new_kernel_shape -= np.ones([feature_dim], dtype=np.int64)
+    kernel = np.zeros(new_kernel_shape, dtype=W.dtype)
 
-    x_base = batch * np.product(X.shape[1:]) + x_channel * np.product(X.shape[2:])
-    w_base = feature_map * np.product(W.shape[1:]) + w_channel * np.product(W.shape[2:])
+    slicers = []
+    for i in range(feature_dim):
+        slicers.append(slice(None, None, dilations[i]))
+
+    kernel[tuple(slicers)] = W[feature_map, w_channel]
+    x = X[batch, x_channel]
 
     while x_iter.next():
         x_idx = x_iter.index
 
-        y = 0
-        while w_iter.next():
-            w_idx = w_iter.index  # absolute weight index
-            d_idx = x_idx + w_idx * dilations  # absolute x index
+        # Make padded patch of X[batch, channel]
+        x_patch = np.zeros(kernel.shape)
+        x_slicers, x_padded_slicers = [], []
 
-            if (d_idx < 0).any() or (d_idx >= feature_shape).any():
-                continue
+        # Make slicers for copy pactch of X[batch, channel] on to padded X
+        for i in range(feature_dim):
+            x_start = 0 if x_idx[i] < 0 else x_idx[i]
+            x_end = min(x.shape[i], x_idx[i] + kernel.shape[i])
+            x_slicers.append(slice(x_start, x_end, None))
 
-            # Get x at index
-            d_offset = _index_to_offset(d_idx, feature_shape)
-            x = X_flatten[x_base + d_offset]
+            x_padded_start = -x_idx[i] if x_idx[i] < 0 else 0
+            x_padded_end = x_padded_start + (x_end - x_start)
+            x_padded_slicers.append(slice(x_padded_start, x_padded_end, None))
 
-            # Get w at index
-            w_offset = _index_to_offset(w_idx, kernel_shape)
-            w = W_flatten[w_base + w_offset]
+        # Copy. Ex.           [0][0][0]    [0][0][0]
+        #           [1][2] => [0][0][0] => [1][2][0]
+        #           [3][4]    [0][0][0]    [3][4][0]
+        x_patch[x_padded_slicers] = x[tuple(x_slicers)]
 
-            y += x * w
-
+        # Convolute
+        y = np.sum(x_patch.flatten() * kernel.flatten())
         Y[y_idx] += y
         y_idx += 1
 
@@ -96,8 +105,8 @@ def Conv(output_count, X, W, B, auto_pad, dilations, group, kernel_shape, pads, 
             feature_group = int(W.shape[0] / group)
             for feature_map in range(g * feature_group, (g + 1) * feature_group):  # divide feature_maps into groups
                 for channel in range(W.shape[1]):  # iterate all of channels of feature_map
-                    _conv(Y, y_idx, X, x_iter, W, w_iter, batch, g * W.shape[1] + channel, channel, feature_map,
-                          dilations)
+                    _conv(Y, y_idx, X, x_iter, W, w_iter,
+                          batch, g * W.shape[1] + channel, channel, feature_map, dilations)
 
                 # Apply bias
                 if B is not None:
