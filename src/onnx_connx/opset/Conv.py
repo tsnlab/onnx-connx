@@ -106,7 +106,7 @@ def Conv(output_count, X, W, B, auto_pad, dilations, group, kernel_shape, pads, 
             for feature_map in range(g * feature_group, (g + 1) * feature_group):  # divide feature_maps into groups
                 for channel in range(W.shape[1]):  # iterate all of channels of feature_map
                     _conv(Y, y_idx, X, x_iter, W, w_iter,
-                            batch, g * W.shape[1] + channel, channel, feature_map, dilations)
+                          batch, g * W.shape[1] + channel, channel, feature_map, dilations)
 
                 # Apply bias
                 if B is not None:
