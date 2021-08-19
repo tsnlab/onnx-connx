@@ -1,11 +1,9 @@
 import numpy as np
 from .util import Iterator
-from .util import _index_to_offset
 
 
 def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_map, dilations):
     feature_dim = len(X.shape) - 2
-    feature_shape = X.shape[2:]
     kernel_shape = W.shape[2:]
 
     # Make dilation kernel
@@ -17,9 +15,8 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
     slicers = []
     for i in range(feature_dim):
         slicers.append(slice(None, None, dilations[i]))
-    
+
     kernel[tuple(slicers)] = W[feature_map, w_channel]
-    
     x = X[batch, x_channel]
 
     while x_iter.next():
@@ -32,7 +29,7 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
         # Make slicers for copy pactch of X[batch, channel] on to padded X
         for i in range(feature_dim):
             x_start = 0 if x_idx[i] < 0 else x_idx[i]
-            x_end = min(x.shape[i], x_idx[i] + kernel.shape[i]) 
+            x_end = min(x.shape[i], x_idx[i] + kernel.shape[i])
             x_slicers.append(slice(x_start, x_end, None))
 
             x_padded_start = -x_idx[i] if x_idx[i] < 0 else 0
@@ -45,10 +42,10 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
         x_patch[x_padded_slicers] = x[tuple(x_slicers)]
 
         # Convolute
-        y = np.sum(x_patch.flatten() * kernel.flatten()) 
+        y = np.sum(x_patch.flatten() * kernel.flatten())
         Y[y_idx] += y
         y_idx += 1
-    
+
 
 # X: (N x C x H x W) N - batch, C - channel, H, W - feature 1, 2
 # W: (M x C/group x kH x kW) M is number of feature Map
@@ -108,7 +105,8 @@ def Conv(output_count, X, W, B, auto_pad, dilations, group, kernel_shape, pads, 
             feature_group = int(W.shape[0] / group)
             for feature_map in range(g * feature_group, (g + 1) * feature_group):  # divide feature_maps into groups
                 for channel in range(W.shape[1]):  # iterate all of channels of feature_map
-                    _conv(Y, y_idx, X, x_iter, W, w_iter, batch, g * W.shape[1] + channel, channel, feature_map, dilations)
+                    _conv(Y, y_idx, X, x_iter, W, w_iter,
+                            batch, g * W.shape[1] + channel, channel, feature_map, dilations)
 
                 # Apply bias
                 if B is not None:
@@ -119,5 +117,5 @@ def Conv(output_count, X, W, B, auto_pad, dilations, group, kernel_shape, pads, 
 
     y_shape = (X.shape[0], W.shape[0]) + tuple(output_shape)
     Y = Y.reshape(y_shape)
-    
+
     return Y

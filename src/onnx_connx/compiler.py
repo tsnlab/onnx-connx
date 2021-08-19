@@ -74,7 +74,3 @@ def compile(*_args: str) -> int:
                     out.write(array.tobytes())
 
     return 0
-
-
-if __name__ == "__main__":
-    compile()
