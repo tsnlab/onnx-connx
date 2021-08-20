@@ -107,4 +107,5 @@ def _offset_to_index(offset, shape):
     return tuple(index)
 
 
-__all__ = ['_int', '_float', '_string', '_ints', '_floats', '_strings', 'Iterator', '_index_to_offset', '_offset_to_index']
+__all__ = ['_int', '_float', '_string', '_ints', '_floats',
+           '_strings', 'Iterator', '_index_to_offset', '_offset_to_index']
