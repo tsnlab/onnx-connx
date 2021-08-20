@@ -97,4 +97,15 @@ def _index_to_offset(index, shape):
     return offset
 
 
-__all__ = ['_int', '_float', '_string', '_ints', '_floats', '_strings', 'Iterator', '_index_to_offset']
+def _offset_to_index(offset, shape):
+    index = []
+    for i in range(1, len(shape)):
+        unit = np.prod(np.array(shape[i:]))
+        idx, offset = divmod(offset, unit)
+        index.append(idx)
+    index.append(offset)
+    return tuple(index)
+
+
+__all__ = ['_int', '_float', '_string', '_ints', '_floats',
+           '_strings', 'Iterator', '_index_to_offset', '_offset_to_index']
