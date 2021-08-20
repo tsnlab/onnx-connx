@@ -1,6 +1,6 @@
 import numpy as np
 from .util import Iterator
-from .util import _index_to_offset
+from .util import _index_to_offset, _offset_to_index
 
 
 # X: [DATA_BATCH, DATA_CHANNEL, DATA_FEATURE, DATA_FEATURE ...]
@@ -54,10 +54,8 @@ def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads,
                     pads[i] += 1
 
     # MaxPool
-    X_flatten = X.reshape(-1)
     Y = np.zeros([X.shape[0] * X.shape[1] * int(np.prod(output_shape))], dtype=X.dtype)
     Indices = np.zeros([X.shape[0] * X.shape[1] * int(np.prod(output_shape))], dtype=np.int64)
-
     y_idx = 0
 
     if storage_order == 1:
@@ -66,34 +64,38 @@ def MaxPool(output_count, X, auto_pad, ceil_mode, dilations, kernel_shape, pads,
         else:
             storage_order = 0
 
-    batch_unit = np.product(X.shape[1:])
-    channel_unit = np.product(X.shape[2:])
+    # Make dilation kernel
+    new_kernel_shape = dilations * np.array(kernel_shape)
+    if not np.any(dilations == 1):
+        new_kernel_shape -= np.ones([feature_dim], dtype=np.int64)
 
     for batch in range(X.shape[0]):
         for channel in range(X.shape[1]):
             x_iter = Iterator(-pads[0:feature_dim], -pads[0:feature_dim] + output_shape * strides, strides)
+            x = X[batch, channel]
+
             while x_iter.next():
                 x_idx = x_iter.index
 
-                y = None
-                argmax_idx = None
+                # Make slicers for copy pactch of X[batch, channel] on to padded X
+                x_padded_patch = np.zeros(new_kernel_shape)
+                x_slicers, x_padded_slicers = [], []
+                for i in range(feature_dim):
+                    x_start = 0 if x_idx[i] < 0 else x_idx[i]
+                    x_end = min(x.shape[i], x_idx[i] + new_kernel_shape[i])
+                    x_slicers.append(slice(x_start, x_end, dilations[i]))
 
-                k_iter = Iterator([0] * len(kernel_shape), kernel_shape * dilations, dilations)
-                while k_iter.next():
-                    k_idx = k_iter.index
-                    d_idx = x_idx + k_idx
+                    x_padded_start = -x_idx[i] if x_idx[i] < 0 else 0
+                    x_padded_end = x_padded_start + (x_end - x_start)
+                    x_padded_slicers.append(slice(x_padded_start, x_padded_end, dilations[i]))
 
-                    if (d_idx < 0).any() or (d_idx >= feature_shape).any():
-                        continue
+                x_patch = x[tuple(x_slicers)]
+                x_padded_patch[x_padded_slicers] = x[tuple(x_slicers)]
+                k_idx = _offset_to_index(np.argmax(x_padded_patch), x_padded_patch.shape)
 
-                    # Get x at index
-                    d_offset = _index_to_offset(d_idx, feature_shape)
-                    x = X_flatten[batch * batch_unit + channel * channel_unit + d_offset]
-
-                    # get maximum y
-                    if y is None or x > y:
-                        y = x
-                        argmax_idx = d_offset  # _index_to_offset(d_idx, feature_shape)
+                y = np.max(x_patch)
+                d_idx = x_idx + k_idx
+                argmax_idx = _index_to_offset(d_idx, feature_shape)
 
                 Y[y_idx] = y
 
