@@ -4,11 +4,12 @@ from .util import Iterator
 
 def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_map, dilations):
     feature_dim = len(X.shape) - 2
+    feature_shape = X.shape[2:]
     kernel_shape = W.shape[2:]
 
     # Make dilation kernel
     new_kernel_shape = dilations * np.array(kernel_shape)
-    if dilations.any() != 1:
+    if not np.all(dilations == 1):
         new_kernel_shape -= np.ones([feature_dim], dtype=np.int64)
     kernel = np.zeros(new_kernel_shape, dtype=W.dtype)
 
@@ -17,19 +18,18 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
         slicers.append(slice(None, None, dilations[i]))
 
     kernel[tuple(slicers)] = W[feature_map, w_channel]
-    x = X[batch, x_channel]
 
     while x_iter.next():
         x_idx = x_iter.index
 
         # Make padded patch of X[batch, channel]
         x_patch = np.zeros(kernel.shape)
-        x_slicers, x_padded_slicers = [], []
+        x_slicers, x_padded_slicers = [batch, x_channel], []
 
         # Make slicers for copy pactch of X[batch, channel] on to padded X
         for i in range(feature_dim):
             x_start = 0 if x_idx[i] < 0 else x_idx[i]
-            x_end = min(x.shape[i], x_idx[i] + kernel.shape[i])
+            x_end = min(feature_shape[i], x_idx[i] + kernel.shape[i])
             x_slicers.append(slice(x_start, x_end, None))
 
             x_padded_start = -x_idx[i] if x_idx[i] < 0 else 0
@@ -39,7 +39,7 @@ def _conv(Y, y_idx, X, x_iter, W, w_iter, batch, x_channel, w_channel, feature_m
         # Copy. Ex.           [0][0][0]    [0][0][0]
         #           [1][2] => [0][0][0] => [1][2][0]
         #           [3][4]    [0][0][0]    [3][4][0]
-        x_patch[x_padded_slicers] = x[tuple(x_slicers)]
+        x_patch[x_padded_slicers] = X[tuple(x_slicers)]
 
         # Convolute
         y = np.sum(x_patch.flatten() * kernel.flatten())
