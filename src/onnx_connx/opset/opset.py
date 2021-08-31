@@ -231,6 +231,10 @@ def Transpose(output_count, data, perm):
 
 
 def Clip(output_count, X, min_val, max_val):
+    if min_val is None and max_val is None:
+        min_val = -0.5
+        max_val = 0.5
+
     if min_val is None:
         if np.issubdtype(X.dtype, np.integer):
             min_val = np.iinfo(X.dtype).min
