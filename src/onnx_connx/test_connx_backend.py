@@ -20,6 +20,9 @@ backend_test.exclude(r'test_identity_sequence_cpu')
 backend_test.exclude(r'test_scatter_*')
 backend_test.exclude(r'test_upsample_*')
 
+# Exclude legacy version
+backend_test.exclude(r'test_operator_clip')  # Works in Clip 6
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
