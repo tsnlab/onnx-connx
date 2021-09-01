@@ -230,6 +230,22 @@ def Transpose(output_count, data, perm):
     return np.transpose(data, perm)
 
 
+def Clip(output_count, X, min_val, max_val):
+    if min_val is None:
+        if np.issubdtype(X.dtype, np.integer):
+            min_val = np.iinfo(X.dtype).min
+        elif np.issubdtype(X.dtype, np.floating):
+            min_val = -np.inf
+
+    if max_val is None:
+        if np.issubdtype(X.dtype, np.integer):
+            max_val = np.iinfo(X.dtype).max
+        elif np.issubdtype(X.dtype, np.floating):
+            max_val = np.inf
+
+    return np.clip(X, min_val, max_val)
+
+
 version = 18
 
 opset = {
@@ -250,7 +266,7 @@ opset = {
     'Cast': Cast,
     'Ceil': None,
     'Celu': None,
-    'Clip': None,
+    'Clip': Clip,
     'Compress': None,
     'Concat': Concat,
     'ConcatFromSequence': None,
@@ -593,7 +609,6 @@ attrset = {
     'Compress': [_int('axis', 0)],
     'Concat': [_int('axis', 0)],
     'ConcatFromSequence': [_int('axis', 0), _int('new_axis', 0)],
-
     'Constant': [],
     'ConstantOfShape': [],
     'Conv': [_string('auto_pad', 'NOTSET'), _ints('dilations', []), _int('group', 1),
