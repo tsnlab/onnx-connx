@@ -8,6 +8,11 @@ from .Cast import Cast
 from .Resize import Resize
 
 
+# Internal operators
+def _ref(output_count, tensor):
+    pass
+
+
 # Most of the implementations are fllowd by ONNX reference implementation
 def Abs(ouput_count, X):
     return np.abs(X)
@@ -249,6 +254,7 @@ def Clip(output_count, X, min_val, max_val):
 version = 18
 
 opset = {
+    '_ref': _ref,
     'Abs': Abs,
     'Acos': Acos,
     'Acosh': Acosh,
@@ -419,6 +425,7 @@ opset = {
 #  minimum input count, maximum input count]
 # -1 means unlimited
 argcount = {
+    '_ref': [1, 1],
     'Abs': [1, 1],
     'Acos': [1, 1],
     'Acosh': [1, 1],
@@ -587,6 +594,7 @@ argcount = {
 }
 
 attrset = {
+    '_ref': [_int('ref_count', 0)],
     'Abs': [],
     'Acos': [],
     'Acosh': [],

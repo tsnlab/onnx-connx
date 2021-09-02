@@ -209,6 +209,38 @@ class ConnxGraphProto(ConnxObject):
 
         self.node = [ConnxNodeProto(proto, self) for proto in proto.node]
 
+        # Internal operators
+        for initializer in self.initializer:
+            idx = 0
+            ref_count = self.get_ref_count(initializer.proto.name)
+            if ref_count > 1:
+                print('create proto')
+                node = self.make_ref_count(initializer.proto.name, initializer.id, ref_count)
+                self.node.insert(idx, node)
+                idx += 1
+
+        for sparse_initializer in self.sparse_initializer:
+            idx = 0
+            ref_count = self.get_ref_count(sparse_initializer.proto.name)
+            if ref_count > 1:
+                node = self.make_ref_count(sparse_initializer.proto.name, sparse_initializer.id, ref_count)
+                self.node.insert(idx, node)
+                idx += 1
+
+        idx = 0
+        length = len(self.node)
+        while idx < length:
+            node = self.node[idx]
+            for name in node.proto.output:
+                ref_count = self.get_ref_count(name, idx + 1)
+                if ref_count > 1:
+                    value_info = self.get_value_info(name)
+                    node = self.make_ref_count(name, value_info.id, ref_count)
+                    self.node.insert(idx + 1, node)
+                    idx += 1
+                    length += 1
+            idx += 1
+
     def get_value_info(self, name):
         for value_info in self.value_info:
             if value_info.proto is not None and value_info.proto.name == name or value_info.name == name:
@@ -267,6 +299,32 @@ class ConnxGraphProto(ConnxObject):
 
         for node in self.node:
             node.dump(depth + 2)
+
+    def get_ref_count(self, name, idx=0):
+        count = 0
+
+        for i in range(idx, len(self.node)):
+            if name in self.node[i].proto.input:
+                count += 1
+
+        if name in self.proto.output:
+            count += 1
+
+        return count
+
+    def make_ref_count(self, name, id, ref_count):
+        attr = onnx.AttributeProto()
+        attr.name = 'ref_count'
+        attr.type = onnx.AttributeProto.AttributeType.INT
+        attr.i = ref_count
+
+        proto = onnx.NodeProto()
+        proto.name = '_ref'
+        proto.op_type = '_ref'
+        proto.input.append(name)
+        proto.attribute.append(attr)
+
+        return ConnxNodeProto(proto, self)
 
     def compile(self, path):
         def write(tensor, array, out):
