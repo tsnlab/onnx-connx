@@ -39,8 +39,8 @@ setuptools.setup(name='onnx-connx',
                      'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
                      'Topic :: Software Development :: Build Tools',
                  ],
-                 package_dir={'': 'src'},
-                 packages=setuptools.find_packages(where='src'),
+                 package_dir={'': '.'},
+                 packages=setuptools.find_packages(where='.'),
                  install_requires=[
                      'onnx==1.9.0'
                  ],

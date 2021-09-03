@@ -87,7 +87,7 @@ class ConnxModelProto(ConnxObject):
 
         with open(os.path.join(path, 'model.connx'), 'w') as out:
             # Write connx version
-            out.write('connx 1\n')
+            out.write('connx 3\n')
 
             # Write opset_import
             out.write('opset_import ')
@@ -162,6 +162,9 @@ class ConnxGraphProto(ConnxObject):
 
         # Make value_info reflects to input
         for input in proto.input:
+            if input.name == '':
+                continue
+
             value_info = self.get_value_info(input.name)
 
             if value_info is None:
@@ -172,6 +175,9 @@ class ConnxGraphProto(ConnxObject):
 
         # Make value_info reflects to output
         for output in proto.output:
+            if output.name == '':
+                continue
+
             value_info = self.get_value_info(output.name)
 
             if value_info is None:
@@ -184,6 +190,9 @@ class ConnxGraphProto(ConnxObject):
         for node in proto.node:
             for name in itertools.chain(node.input, node.output):
                 value_info = self.get_value_info(name)
+
+                if name == '':
+                    continue
 
                 if value_info is None:
                     value_info = ConnxValueInfoProto(None, self, name=name)
@@ -740,12 +749,18 @@ class ConnxNodeProto(ConnxObject):
         for i in range(len(self.proto.output)):
             value_info = self.parent.get_value_info(self.proto.output[i])
             out.write(' ')
-            out.write(str(value_info.id))
+            if value_info is not None:
+                out.write(str(value_info.id))
+            else:
+                out.write('0')
 
         for i in range(len(self.proto.input)):
             value_info = self.parent.get_value_info(self.proto.input[i])
             out.write(' ')
-            out.write(str(value_info.id))
+            if value_info is not None:
+                out.write(str(value_info.id))
+            else:
+                out.write('0')
 
         for attribute in self.attribute:
             out.write(' ')
