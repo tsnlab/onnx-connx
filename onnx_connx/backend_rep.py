@@ -226,7 +226,7 @@ class BackendRep(object):
 
         # check connx version
         tokens = lines[0].split(' ')
-        if tokens.pop(0) != 'connx' or int(tokens.pop(0)) > 1:
+        if tokens.pop(0) != 'connx' or int(tokens.pop(0)) != 3:
             raise Exception('not supported connx version: {}'.format(lines[0].trim()))
 
         # parse opset_import
