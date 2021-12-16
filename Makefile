@@ -103,6 +103,9 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_conv_with_autopad_same                        $(CONNX_HOME)/test/data/node/test_conv_with_autopad_same
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_basic_conv_without_padding                    $(CONNX_HOME)/test/data/node/test_basic_conv_without_padding
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_conv_with_strides_and_asymmetric_padding      $(CONNX_HOME)/test/data/node/test_conv_with_strides_and_asymmetric_padding
+	# Exp
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_exp                                           $(CONNX_HOME)/test/data/node/test_exp
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_exp_example                                   $(CONNX_HOME)/test/data/node/test_exp_example
 	# Identity
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity                                      $(CONNX_HOME)/test/data/node/test_identity
 	# seq is not supported yest
