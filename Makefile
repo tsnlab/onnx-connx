@@ -106,6 +106,33 @@ convert-test: # Convert onnx test case to connx
 	# Exp
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_exp                                           $(CONNX_HOME)/test/data/node/test_exp
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_exp_example                                   $(CONNX_HOME)/test/data/node/test_exp_example
+	# Log
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_log                                           $(CONNX_HOME)/test/data/node/test_log
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_log_example                                   $(CONNX_HOME)/test/data/node/test_log_example
+	# Tan
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_tan                                           $(CONNX_HOME)/test/data/node/test_tan
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_tan_example                                   $(CONNX_HOME)/test/data/node/test_tan_example
+	# Tanh
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_tanh                                          $(CONNX_HOME)/test/data/node/test_tanh
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_tanh_example                                  $(CONNX_HOME)/test/data/node/test_tanh_example
+	# Sin
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sin                                           $(CONNX_HOME)/test/data/node/test_sin
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sin_example                                   $(CONNX_HOME)/test/data/node/test_sin_example
+	# Sinh
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sinh                                          $(CONNX_HOME)/test/data/node/test_sinh
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sinh_example                                  $(CONNX_HOME)/test/data/node/test_sinh_example
+	# Cos
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cos                                           $(CONNX_HOME)/test/data/node/test_cos
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cos_example                                   $(CONNX_HOME)/test/data/node/test_cos_example
+	# Cosh
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cosh                                          $(CONNX_HOME)/test/data/node/test_cosh
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cosh_example                                  $(CONNX_HOME)/test/data/node/test_cosh_example
+	# Sigmoid
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sigmoid                                       $(CONNX_HOME)/test/data/node/test_sigmoid
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sigmoid_example                               $(CONNX_HOME)/test/data/node/test_sigmoid_example
+	# Sign
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sign                                          $(CONNX_HOME)/test/data/node/test_sign
+	bin/convert $(ONNX_HOME)/backend/test/data/simple/test_sign_model                                  $(CONNX_HOME)/test/data/simple/test_sign_model
 	# Identity
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity                                      $(CONNX_HOME)/test/data/node/test_identity
 	# seq is not supported yest
