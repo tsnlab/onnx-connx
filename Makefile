@@ -133,6 +133,20 @@ convert-test: # Convert onnx test case to connx
 	# Sign
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sign                                          $(CONNX_HOME)/test/data/node/test_sign
 	bin/convert $(ONNX_HOME)/backend/test/data/simple/test_sign_model                                  $(CONNX_HOME)/test/data/simple/test_sign_model
+	
+	# Cast
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_DOUBLE_to_FLOAT                          $(CONNX_HOME)/test/data/node/test_cast_DOUBLE_to_FLOAT
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_DOUBLE                          $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_DOUBLE
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_STRING                          $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_STRING
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_STRING_to_FLOAT                          $(CONNX_HOME)/test/data/node/test_cast_STRING_to_FLOAT
+	# Float16 is not supported yet
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_BFLOAT16_to_FLOAT                        $(CONNX_HOME)/test/data/node/test_cast_BFLOAT16_to_FLOAT
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_DOUBLE_to_FLOAT16                        $(CONNX_HOME)/test/data/node/test_cast_DOUBLE_to_FLOAT16
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT16_to_DOUBLE                        $(CONNX_HOME)/test/data/node/test_cast_FLOAT16_to_DOUBLE
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT16_to_FLOAT                         $(CONNX_HOME)/test/data/node/test_cast_FLOAT16_to_FLOAT
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_BFLOAT16                        $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_BFLOAT16
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_FLOAT16                         $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_FLOAT16
+	
 	# Identity
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity                                      $(CONNX_HOME)/test/data/node/test_identity
 	# seq is not supported yest
