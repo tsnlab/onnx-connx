@@ -137,8 +137,9 @@ convert-test: # Convert onnx test case to connx
 	# Cast
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_DOUBLE_to_FLOAT                          $(CONNX_HOME)/test/data/node/test_cast_DOUBLE_to_FLOAT
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_DOUBLE                          $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_DOUBLE
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_STRING                          $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_STRING
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_STRING_to_FLOAT                          $(CONNX_HOME)/test/data/node/test_cast_STRING_to_FLOAT
+	# String is not supported yet
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_STRING                          $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_STRING
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_STRING_to_FLOAT                          $(CONNX_HOME)/test/data/node/test_cast_STRING_to_FLOAT
 	# Float16 is not supported yet
 	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_BFLOAT16_to_FLOAT                        $(CONNX_HOME)/test/data/node/test_cast_BFLOAT16_to_FLOAT
 	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_DOUBLE_to_FLOAT16                        $(CONNX_HOME)/test/data/node/test_cast_DOUBLE_to_FLOAT16
