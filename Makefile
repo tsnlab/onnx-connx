@@ -202,4 +202,31 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity                                      $(CONNX_HOME)/test/data/node/test_identity
 	# seq is not supported yest
 	#bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity_sequence                             $(CONNX_HOME)/test/data/node/test_identity_sequence
-
+	
+	# Slice
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice                                         $(CONNX_HOME)/test/data/node/test_slice
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_default_axes                            $(CONNX_HOME)/test/data/node/test_slice_default_axes
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_default_steps                           $(CONNX_HOME)/test/data/node/test_slice_default_steps
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_end_out_of_bounds                       $(CONNX_HOME)/test/data/node/test_slice_end_out_of_bounds
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_neg                                     $(CONNX_HOME)/test/data/node/test_slice_neg
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_neg_steps                               $(CONNX_HOME)/test/data/node/test_slice_neg_steps
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_negative_axes                           $(CONNX_HOME)/test/data/node/test_slice_negative_axes
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_start_out_of_bounds                     $(CONNX_HOME)/test/data/node/test_slice_start_out_of_bounds
+	
+	# Split
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_equal_parts_1d                          $(CONNX_HOME)/test/data/node/test_split_equal_parts_1d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_equal_parts_2d                          $(CONNX_HOME)/test/data/node/test_split_equal_parts_2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_equal_parts_default_axis                $(CONNX_HOME)/test/data/node/test_split_equal_parts_default_axis
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_variable_parts_1d                       $(CONNX_HOME)/test/data/node/test_split_variable_parts_1d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_variable_parts_2d                       $(CONNX_HOME)/test/data/node/test_split_variable_parts_2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_variable_parts_default_axis             $(CONNX_HOME)/test/data/node/test_split_variable_parts_default_axis
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_zero_size_splits                        $(CONNX_HOME)/test/data/node/test_split_zero_size_splits
+	
+	# Transpose
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_0                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_0
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_1                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_2                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_2
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_3                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_3
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_4                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_4
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_5                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_5
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_default                             $(CONNX_HOME)/test/data/node/test_transpose_default
