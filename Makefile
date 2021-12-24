@@ -137,8 +137,9 @@ convert-test: # Convert onnx test case to connx
 	# Cast
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_DOUBLE_to_FLOAT                          $(CONNX_HOME)/test/data/node/test_cast_DOUBLE_to_FLOAT
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_DOUBLE                          $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_DOUBLE
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_STRING                          $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_STRING
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_STRING_to_FLOAT                          $(CONNX_HOME)/test/data/node/test_cast_STRING_to_FLOAT
+	# String is not supported yet
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_STRING                          $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_STRING
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_STRING_to_FLOAT                          $(CONNX_HOME)/test/data/node/test_cast_STRING_to_FLOAT
 	# Float16 is not supported yet
 	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_BFLOAT16_to_FLOAT                        $(CONNX_HOME)/test/data/node/test_cast_BFLOAT16_to_FLOAT
 	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_DOUBLE_to_FLOAT16                        $(CONNX_HOME)/test/data/node/test_cast_DOUBLE_to_FLOAT16
@@ -147,8 +148,76 @@ convert-test: # Convert onnx test case to connx
 	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_BFLOAT16                        $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_BFLOAT16
 	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_cast_FLOAT_to_FLOAT16                         $(CONNX_HOME)/test/data/node/test_cast_FLOAT_to_FLOAT16
 	
+	# Concat
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_1d_axis_0                              $(CONNX_HOME)/test/data/node/test_concat_1d_axis_0
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_1d_axis_negative_1                     $(CONNX_HOME)/test/data/node/test_concat_1d_axis_negative_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_2d_axis_0                              $(CONNX_HOME)/test/data/node/test_concat_2d_axis_0
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_2d_axis_1                              $(CONNX_HOME)/test/data/node/test_concat_2d_axis_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_2d_axis_negative_1                     $(CONNX_HOME)/test/data/node/test_concat_2d_axis_negative_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_2d_axis_negative_2                     $(CONNX_HOME)/test/data/node/test_concat_2d_axis_negative_2
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_3d_axis_0                              $(CONNX_HOME)/test/data/node/test_concat_3d_axis_0
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_3d_axis_1                              $(CONNX_HOME)/test/data/node/test_concat_3d_axis_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_3d_axis_2                              $(CONNX_HOME)/test/data/node/test_concat_3d_axis_2
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_3d_axis_negative_1                     $(CONNX_HOME)/test/data/node/test_concat_3d_axis_negative_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_3d_axis_negative_2                     $(CONNX_HOME)/test/data/node/test_concat_3d_axis_negative_2
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_concat_3d_axis_negative_3                     $(CONNX_HOME)/test/data/node/test_concat_3d_axis_negative_3
+	bin/convert $(ONNX_HOME)/backend/test/data/pytorch-operator/test_operator_concat2                  $(CONNX_HOME)/test/data/pytorch-operator/test_operator_concat2
+	
+	# Gather
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gather_0                                      $(CONNX_HOME)/test/data/node/test_gather_0
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gather_1                                      $(CONNX_HOME)/test/data/node/test_gather_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gather_2d_indices                             $(CONNX_HOME)/test/data/node/test_gather_2d_indices
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gather_elements_0                             $(CONNX_HOME)/test/data/node/test_gather_elements_0
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gather_elements_1                             $(CONNX_HOME)/test/data/node/test_gather_elements_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gather_elements_negative_indices              $(CONNX_HOME)/test/data/node/test_gather_elements_negative_indices
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gather_negative_indices                       $(CONNX_HOME)/test/data/node/test_gather_negative_indices
+	
+	# LeakyRelu
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_leakyrelu                                     $(CONNX_HOME)/test/data/node/test_leakyrelu
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_leakyrelu_default                             $(CONNX_HOME)/test/data/node/test_leakyrelu_default
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_leakyrelu_example                             $(CONNX_HOME)/test/data/node/test_leakyrelu_example
+	
+	# Shape
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape                                         $(CONNX_HOME)/test/data/node/test_shape
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_clip_end                                $(CONNX_HOME)/test/data/node/test_shape_clip_end
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_clip_start                              $(CONNX_HOME)/test/data/node/test_shape_clip_start
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_end_1                                   $(CONNX_HOME)/test/data/node/test_shape_end_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_end_negative_1                          $(CONNX_HOME)/test/data/node/test_shape_end_negative_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_example                                 $(CONNX_HOME)/test/data/node/test_shape_example
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_start_1                                 $(CONNX_HOME)/test/data/node/test_shape_start_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_start_1_end_2                           $(CONNX_HOME)/test/data/node/test_shape_start_1_end_2
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_start_1_end_negative_1                  $(CONNX_HOME)/test/data/node/test_shape_start_1_end_negative_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_start_negative_1                        $(CONNX_HOME)/test/data/node/test_shape_start_negative_1
+	
 	# Identity
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity                                      $(CONNX_HOME)/test/data/node/test_identity
 	# seq is not supported yest
 	#bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity_sequence                             $(CONNX_HOME)/test/data/node/test_identity_sequence
-
+	
+	# Slice
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice                                         $(CONNX_HOME)/test/data/node/test_slice
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_default_axes                            $(CONNX_HOME)/test/data/node/test_slice_default_axes
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_default_steps                           $(CONNX_HOME)/test/data/node/test_slice_default_steps
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_end_out_of_bounds                       $(CONNX_HOME)/test/data/node/test_slice_end_out_of_bounds
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_neg                                     $(CONNX_HOME)/test/data/node/test_slice_neg
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_neg_steps                               $(CONNX_HOME)/test/data/node/test_slice_neg_steps
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_negative_axes                           $(CONNX_HOME)/test/data/node/test_slice_negative_axes
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_slice_start_out_of_bounds                     $(CONNX_HOME)/test/data/node/test_slice_start_out_of_bounds
+	
+	# Split
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_equal_parts_1d                          $(CONNX_HOME)/test/data/node/test_split_equal_parts_1d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_equal_parts_2d                          $(CONNX_HOME)/test/data/node/test_split_equal_parts_2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_equal_parts_default_axis                $(CONNX_HOME)/test/data/node/test_split_equal_parts_default_axis
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_variable_parts_1d                       $(CONNX_HOME)/test/data/node/test_split_variable_parts_1d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_variable_parts_2d                       $(CONNX_HOME)/test/data/node/test_split_variable_parts_2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_variable_parts_default_axis             $(CONNX_HOME)/test/data/node/test_split_variable_parts_default_axis
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_split_zero_size_splits                        $(CONNX_HOME)/test/data/node/test_split_zero_size_splits
+	
+	# Transpose
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_0                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_0
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_1                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_1
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_2                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_2
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_3                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_3
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_4                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_4
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_5                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_5
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_default                             $(CONNX_HOME)/test/data/node/test_transpose_default
