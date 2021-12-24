@@ -189,15 +189,6 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_start_1_end_negative_1                  $(CONNX_HOME)/test/data/node/test_shape_start_1_end_negative_1
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_shape_start_negative_1                        $(CONNX_HOME)/test/data/node/test_shape_start_negative_1
 	
-	# Transpose
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_5                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_5
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_2                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_2
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_default                             $(CONNX_HOME)/test/data/node/test_transpose_default
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_4                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_4
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_1                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_1
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_3                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_3
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_transpose_all_permutations_0                  $(CONNX_HOME)/test/data/node/test_transpose_all_permutations_0
-	
 	# Identity
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity                                      $(CONNX_HOME)/test/data/node/test_identity
 	# seq is not supported yest
