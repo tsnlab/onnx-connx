@@ -585,16 +585,20 @@ class ConnxAttributeProto(ConnxObject):
         out.write(self.proto.name)
         out.write(' ')
         out.write(str(self.proto.type))
-        out.write(' ')
 
-        if self.proto.type in [1, 2]:
+        if self.proto.type == 0:
+            pass  # UNDEFINED means null attribute
+        elif self.proto.type in [1, 2]:
+            out.write(' ')
             out.write(str(self.value()))
         elif self.proto.type == 3:
+            out.write(' ')
             s = self.value().decode('utf-8')
             out.write(str(len(s)))
             out.write(' ')
             out.write(s)
         elif self.proto.type in [6, 7]:
+            out.write(' ')
             value = self.value()
             out.write(str(len(value)))
 
@@ -602,6 +606,7 @@ class ConnxAttributeProto(ConnxObject):
                 out.write(' ')
                 out.write(str(value[i]))
         elif self.proto.type == 8:
+            out.write(' ')
             value = self.value().decode('utf-8')
             out.write(str(len(value)))
 

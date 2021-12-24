@@ -2,6 +2,13 @@ import onnx
 import numpy as np
 
 
+def _null(name):
+    attr = onnx.AttributeProto()
+    attr.name = name
+    attr.type = onnx.AttributeProto.AttributeType.UNDEFINED
+    return attr
+
+
 def _float(name, value):
     attr = onnx.AttributeProto()
     attr.name = name

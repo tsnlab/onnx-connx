@@ -1,5 +1,5 @@
 import numpy as np
-from .util import _int, _float, _string, _ints
+from .util import _null, _int, _float, _string, _ints
 from .MaxPool import MaxPool
 from .BatchNormalization import BatchNormalization
 from .GlobalAveragePool import GlobalAveragePool
@@ -726,7 +726,7 @@ attrset = {
     'SequenceErase': [],
     'SequenceInsert': [],
     'SequenceLength': [],
-    'Shape': [],
+    'Shape': [_null('end'), _int('start', 0)],
     'Shrink': [],
     'Sigmoid': [],
     'Sign': [],
