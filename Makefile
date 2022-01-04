@@ -232,7 +232,7 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_cubic                                 $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_cubic
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_linear_pytorch_half_pixel             $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_linear_pytorch_half_pixel
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_nearest                               $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_nearest
-	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn          $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn          $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_tf_crop_and_resize                                     $(CONNX_HOME)/test/data/node/test_resize_tf_crop_and_resize
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_cubic                                  $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_cubic
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_cubic_A_n0p5_exclude_outside           $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_cubic_A_n0p5_exclude_outside
