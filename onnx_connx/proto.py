@@ -160,19 +160,6 @@ class ConnxGraphProto(ConnxObject):
                 value_info.sparse_initializer = sparse_initializer
                 self.value_info.append(value_info)
 
-        # Make value_info reflects to input
-        for input in proto.input:
-            if input.name == '':
-                continue
-
-            value_info = self.get_value_info(input.name)
-
-            if value_info is None:
-                value_info = ConnxValueInfoProto(input, self)
-                self.value_info.append(value_info)
-
-            self.input.append(value_info)
-
         # Make value_info reflects to output
         for output in proto.output:
             if output.name == '':
@@ -217,6 +204,24 @@ class ConnxGraphProto(ConnxObject):
                 id += 1
 
         self.node = [ConnxNodeProto(proto, self) for proto in proto.node]
+
+        # Make value_info reflects to input
+        for input in proto.input:
+            if input.name == '':
+                continue
+
+            value_info = self.get_value_info(input.name)
+
+            if value_info is None:
+                value_info = ConnxValueInfoProto(input, self)
+                self.value_info.append(value_info)
+
+            ref_count = self.get_ref_count(input.name)
+            if ref_count > 1:
+                node = self.make_ref_count(input.name, None, ref_count)
+                self.node.insert(0, node)
+
+            self.input.append(value_info)
 
         # Internal operators
         for initializer in self.initializer:
