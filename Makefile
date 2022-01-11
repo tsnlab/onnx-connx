@@ -246,3 +246,35 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_ceil_half_pixel                 $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_ceil_half_pixel
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_floor_align_corners             $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_floor_align_corners
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_round_prefer_ceil_asymmetric    $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_round_prefer_ceil_asymmetric
+	# GlobalMaxPool
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_globalmaxpool                                 $(CONNX_HOME)/test/data/node/test_globalmaxpool
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_globalmaxpool_precomputed                     $(CONNX_HOME)/test/data/node/test_globalmaxpool_precomputed
+	# SoftPlus
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_softplus                                      $(CONNX_HOME)/test/data/node/test_softplus
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_softplus_example                              $(CONNX_HOME)/test/data/node/test_softplus_example
+	# Tile
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_tile                                          $(CONNX_HOME)/test/data/node/test_tile
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_tile_precomputed                              $(CONNX_HOME)/test/data/node/test_tile_precomputed
+	# NonZero
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_nonzero_example                               $(CONNX_HOME)/test/data/node/test_nonzero_example
+	# Squeeze
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_squeeze                                       $(CONNX_HOME)/test/data/node/test_squeeze
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_squeeze_negative_axes                         $(CONNX_HOME)/test/data/node/test_squeeze_axes
+	# Compare
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_less                              $(CONNX_HOME)/test/data/node/test_less
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_less_bcast                              $(CONNX_HOME)/test/data/node/test_less_bcast
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_less_equal                              $(CONNX_HOME)/test/data/node/test_less_equal
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_less_equal_bcast                              $(CONNX_HOME)/test/data/node/test_less_equal_bcast
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_less_equal_bcast_expanded                              $(CONNX_HOME)/test/data/node/test_less_equal_bcast_expanded
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_less_equal_expanded                              $(CONNX_HOME)/test/data/node/test_less_equal_expanded
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_equal                              $(CONNX_HOME)/test/data/node/test_equal
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_equal_bcast                              $(CONNX_HOME)/test/data/node/test_equal_bcast
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater                              $(CONNX_HOME)/test/data/node/test_greater
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater_bcast                              $(CONNX_HOME)/test/data/node/test_greater_bcast
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater_equal                              $(CONNX_HOME)/test/data/node/test_greater_equal
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater_equal_bcast                              $(CONNX_HOME)/test/data/node/test_greater_equal_bcast
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater_equal_bcast_expanded                              $(CONNX_HOME)/test/data/node/test_greater_equal_bcast_expanded
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater_equal_expanded                              $(CONNX_HOME)/test/data/node/test_greater_equal_expanded
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_not_2d                              $(CONNX_HOME)/test/data/node/test_not_2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_not_3d                              $(CONNX_HOME)/test/data/node/test_not_3d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_not_4d                              $(CONNX_HOME)/test/data/node/test_not_4d
