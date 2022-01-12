@@ -31,6 +31,7 @@ convert-test: # Convert onnx test case to connx
 	# Asin
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_asin_example  $(CONNX_HOME)/test/data/node/test_asin_example
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_asin          $(CONNX_HOME)/test/data/node/test_asin
+	# Binary operators
 	# Add
 	bin/convert $(ONNX_HOME)/backend/test/data/pytorch-operator/test_operator_add_size1_singleton_broadcast $(CONNX_HOME)/test/data/pytorch-operator/test_operator_add_size1_singleton_broadcast
 	bin/convert $(ONNX_HOME)/backend/test/data/pytorch-operator/test_operator_add_size1_right_broadcast     $(CONNX_HOME)/test/data/pytorch-operator/test_operator_add_size1_right_broadcast
@@ -44,6 +45,17 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sub_example $(CONNX_HOME)/test/data/node/test_sub_example
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sub_bcast   $(CONNX_HOME)/test/data/node/test_sub_bcast
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_sub_uint8   $(CONNX_HOME)/test/data/node/test_sub_uint8
+	# Mul
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mul                              $(CONNX_HOME)/test/data/node/test_mul
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mul_bcast                              $(CONNX_HOME)/test/data/node/test_mul_bcast
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mul_example                              $(CONNX_HOME)/test/data/node/test_mul_example
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mul_uint8                              $(CONNX_HOME)/test/data/node/test_mul_uint8
+	# Div
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_div                              $(CONNX_HOME)/test/data/node/test_div
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_div_bcast                              $(CONNX_HOME)/test/data/node/test_div_bcast
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_div_example                              $(CONNX_HOME)/test/data/node/test_div_example
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_div_uint8                              $(CONNX_HOME)/test/data/node/test_div_uint8
+	
 	# MaxPool
 	bin/convert $(ONNX_HOME)/backend/test/data/pytorch-operator/test_operator_maxpool                   $(CONNX_HOME)/test/data/pytorch-operator/test_operator_maxpool
 	bin/convert $(ONNX_HOME)/backend/test/data/pytorch-converted/test_MaxPool2d                         $(CONNX_HOME)/test/data/pytorch-converted/test_MaxPool2d
@@ -275,6 +287,31 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater_equal_bcast                              $(CONNX_HOME)/test/data/node/test_greater_equal_bcast
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater_equal_bcast_expanded                              $(CONNX_HOME)/test/data/node/test_greater_equal_bcast_expanded
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_greater_equal_expanded                              $(CONNX_HOME)/test/data/node/test_greater_equal_expanded
+	# Logical compare
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_not_2d                              $(CONNX_HOME)/test/data/node/test_not_2d
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_not_3d                              $(CONNX_HOME)/test/data/node/test_not_3d
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_not_4d                              $(CONNX_HOME)/test/data/node/test_not_4d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_xor2d                              $(CONNX_HOME)/test/data/node/test_xor2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_xor3d                              $(CONNX_HOME)/test/data/node/test_xor3d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_xor4d                              $(CONNX_HOME)/test/data/node/test_xor4d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_xor_bcast3v1d                              $(CONNX_HOME)/test/data/node/test_xor_bcast3v1d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_xor_bcast3v2d                              $(CONNX_HOME)/test/data/node/test_xor_bcast3v2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_xor_bcast4v2d                              $(CONNX_HOME)/test/data/node/test_xor_bcast4v2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_xor_bcast4v3d                              $(CONNX_HOME)/test/data/node/test_xor_bcast4v3d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_xor_bcast4v4d                              $(CONNX_HOME)/test/data/node/test_xor_bcast4v4d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_or2d                              $(CONNX_HOME)/test/data/node/test_or2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_or3d                              $(CONNX_HOME)/test/data/node/test_or3d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_or4d                              $(CONNX_HOME)/test/data/node/test_or4d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_or_bcast3v1d                              $(CONNX_HOME)/test/data/node/test_or_bcast3v1d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_or_bcast3v2d                              $(CONNX_HOME)/test/data/node/test_or_bcast3v2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_or_bcast4v2d                              $(CONNX_HOME)/test/data/node/test_or_bcast4v2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_or_bcast4v3d                              $(CONNX_HOME)/test/data/node/test_or_bcast4v3d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_or_bcast4v4d                              $(CONNX_HOME)/test/data/node/test_or_bcast4v4d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_and2d                              $(CONNX_HOME)/test/data/node/test_and2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_and3d                              $(CONNX_HOME)/test/data/node/test_and3d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_and4d                              $(CONNX_HOME)/test/data/node/test_and4d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_and_bcast3v1d                              $(CONNX_HOME)/test/data/node/test_and_bcast3v1d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_and_bcast3v2d                              $(CONNX_HOME)/test/data/node/test_and_bcast3v2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_and_bcast4v2d                              $(CONNX_HOME)/test/data/node/test_and_bcast4v2d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_and_bcast4v3d                              $(CONNX_HOME)/test/data/node/test_and_bcast4v3d
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_and_bcast4v4d                              $(CONNX_HOME)/test/data/node/test_and_bcast4v4d
