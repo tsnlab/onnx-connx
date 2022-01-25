@@ -51,9 +51,8 @@ class Backend(object):
             return BackendRep(path)
         else:
             path = tempfile.TemporaryDirectory()
-            path = str(path)
-            compile_from_model(model, path)
-            return BackendRep(path)
+            compile_from_model(model, path.name)
+            return BackendRep(path.name)
 
     @classmethod
     def run_model(cls,
