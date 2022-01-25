@@ -1,19 +1,9 @@
-from .opset import version as default_version
-from .opset import opset as default_opset
-from .opset import argcount as default_argcount
-from .opset import attrset as default_attrset
+from .opset_v18 import version as default_version
+from .opset_v18 import attrset as default_attrset
 
 
 _versions = {
     '': default_version
-}
-
-_opsets = {
-    '': default_opset
-}
-
-_argcounts = {
-    '': default_argcount
 }
 
 _attrsets = {
@@ -35,40 +25,6 @@ def _check(specs):
                             'expected: {}'.format(domain, _versions[domain], version))
 
 
-def get_opset(specs):
-    _check(specs)
-
-    opset = {}
-
-    for spec in specs:
-        domain = spec['domain']
-        _ = spec['version']
-
-        opsets = _opsets[domain]
-
-        for key, value in opsets.items():
-            opset[key] = value
-
-    return opset
-
-
-def get_argcount(specs):
-    _check(specs)
-
-    argcount = {}
-
-    for spec in specs:
-        domain = spec['domain']
-        _ = spec['version']
-
-        argcounts = _argcounts[domain]
-
-        for key, value in argcounts.items():
-            argcount[key] = value
-
-    return argcount
-
-
 def get_attrset(specs):
     _check(specs)
 
@@ -86,4 +42,4 @@ def get_attrset(specs):
     return attrset
 
 
-__all__ = [get_opset, get_argcount, get_attrset]
+__all__ = [get_attrset]

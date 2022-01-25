@@ -4,6 +4,7 @@ from .backend import Backend
 
 
 pytest_plugins = 'onnx.backend.test.report',
+
 backend_test = onnx.backend.test.runner.Runner(Backend, __name__)
 
 # Exclude training operators
@@ -15,6 +16,9 @@ backend_test.exclude(r'nesterov_momentum_*')
 backend_test.exclude(r'test_batchnorm_epsilon_training_mode')
 backend_test.exclude(r'test_batchnorm_example_training_mode')
 backend_test.exclude(r'test_identity_sequence_cpu')
+backend_test.exclude(r'test_cast.*FLOAT16.*')
+backend_test.exclude(r'test_cast.*BFLOAT16.*')
+backend_test.exclude(r'test_cast.*STRING.*')
 
 # Exclude deprecated operators
 backend_test.exclude(r'test_scatter_*')

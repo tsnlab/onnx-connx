@@ -12,7 +12,7 @@ from onnx import ModelProto, NodeProto, IR_VERSION
 
 from .backend_rep import BackendRep
 from .compiler import compile_from_model
-from .opset import get_opset
+from .opset import get_attrset
 
 
 class Backend(object):
@@ -28,10 +28,10 @@ class Backend(object):
             opset_import = model.opset_import[i]
             specs.append({'domain': opset_import.domain, 'version': opset_import.version})
 
-        opset = get_opset(specs)
+        attrset = get_attrset(specs)
 
         for i in range(len(model.graph.node)):
-            if opset[model.graph.node[i].op_type] is None:
+            if model.graph.node[i].op_type not in attrset or attrset[model.graph.node[i].op_type] is None:
                 # print('Not supported op_type:', model.graph.node[i].op_type)
                 return False
 
@@ -45,16 +45,17 @@ class Backend(object):
                 ):  # type: (...) -> Optional[BackendRep]
         onnx.checker.check_model(model)
 
-        if 'out' in kwargs and kwargs['out'] is not None:
+        if 'out' in kwargs:
             path = kwargs['out']
             os.makedirs(path, exist_ok=True)
 
             compile_from_model(model, path)
             return BackendRep(path)
         else:
-            with tempfile.TemporaryDirectory() as path:
-                compile_from_model(model, path)
-                return BackendRep(path)
+            path = tempfile.TemporaryDirectory()
+            path = str(path)
+            compile_from_model(model, path)
+            return BackendRep(path)
 
     @classmethod
     def run_model(cls,
@@ -74,34 +75,7 @@ class Backend(object):
                  outputs_info=None,  # type: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]]
                  **kwargs  # type: Dict[Text, Any]
                  ):  # type: (...) -> Optional[Tuple[Any, ...]]
-        print('##### run_node')
         raise Exception('run_node is not implemented yet')
-        '''Simple run one operator and return the results.
-        Args:
-            outputs_info: a list of tuples, which contains the element type and
-            shape of each output. First element of the tuple is the dtype, and
-            the second element is the shape. More use case can be found in
-            https://github.com/onnx/onnx/blob/master/onnx/backend/test/runner/__init__.py
-        '''
-        # TODO Remove Optional from return type
-        if 'opset_version' in kwargs:
-            special_context = c_checker.CheckerContext()
-            special_context.ir_version = IR_VERSION
-            special_context.opset_imports = {'': kwargs['opset_version']}  # type: ignore
-            onnx.checker.check_node(node, special_context)
-        else:
-            onnx.checker.check_node(node)
-
-        specs = [{'domain': '', 'version': 15}]  # temporary code, please use special_context
-        opset = get_opset(specs)
-
-        output = None
-
-        if node.op_type in opset:
-            op = opset[node.op_type]
-            output = op(*inputs)
-
-        return (output.dtype, output.shape, output)
 
     @classmethod
     def supports_device(cls, device):  # type: (Text) -> bool
@@ -123,7 +97,11 @@ def main(args):
 
             inputs.append(numpy_helper.to_array(tensor))
 
-    backend = Backend.prepare(model, out=output_dir)
+    kwargs = {}
+    if output_dir is not None:
+        kwargs['out'] = output_dir
+
+    backend = Backend.prepare(model, *kwargs)
     outputs = backend.run(inputs)
 
     if type(outputs) == tuple:

@@ -1,260 +1,189 @@
-import os
-from typing import Tuple, Any
-import numpy as np
 import struct
-from .opset import get_opset, get_argcount
+import subprocess
+import threading
+import traceback
+from typing import Tuple, Any
+
+import numpy as np
 
 
-class Graph:
-    def __init__(self, backend, path, graph_id):
-        self.backend = backend
-        self.path = path
-        self.graph_id = graph_id
+WARN = '\033[93m'
+END = '\033[0m'
 
-        self.text = self.__read_text()
-        self.initializer = []  # initializer 1 to n (initializer[0] contains value_info #1
 
-        self.input = []
-        self.output = []
-        self.value_info = [None]
+class Stderr(threading.Thread):
+    def __init__(self, stderr):
+        threading.Thread.__init__(self)
 
-        self.__read_text()
-        self.__read_initializer()
-        # TODO: read_sparse_initializer
+        self.stderr = stderr
 
-    def interprete(self, inputs):
-        self._value_info(self.text[0])
-        self._output(self.text[2])
-        self._input(self.text[3])
-
-        # Set initializer
-        for idx in range(len(self.initializer)):
-            self.value_info[idx + 1] = self.initializer[idx]
-
-        # Set input
-        for idx, id in zip(range(len(inputs)), self.input):
-            self.value_info[id] = inputs[idx]
-
-        # Execute node
-        node_count = self._node(self.text[4])
-        for i in range(5, 5 + node_count):
-            self._exec(self.text[i])
-
-        return [self.value_info[id] for id in self.output]
-
-    def __read_text(self):
-        file_path = os.path.join(self.path, '{}.text'.format(self.graph_id))
-        with open(file_path, 'r') as f:
-            return f.readlines()
-
-    def __read_initializer(self):
-        tokens = list(self.text[1].split(' '))
-        tokens.pop(0)
-        count = int(tokens.pop(0))
-
-        for i in range(1, count + 1):
-            file_path = os.path.join(self.path, '{}_{}.data'.format(self.graph_id, i))
-            tensor = self.__read_tensor(file_path)
-            self.initializer.append(tensor)
-
-    def __read_tensor(self, path):
-        with open(path, 'rb') as f:
-            dtype, ndim = struct.unpack('=II', f.read(8))
-            shape = []
-            for i in range(ndim):
-                shape.append(struct.unpack('=I', f.read(4))[0])
-
-            np_dtype = (None, np.float32, np.uint8, np.int8, np.uint16, np.int16,
-                        np.int32, np.int64, str, bool, np.float16, np.uint32,
-                        np.uint64, np.csingle, np.cdouble, None)[dtype]
-
-            if np_dtype is None:
-                raise Exception('Tensor data type {} is not supported yet'.format(np_dtype))
-
-            buf = f.read()
-            return np.frombuffer(buf, dtype=np_dtype).reshape(shape)
-
-    def _value_info(self, line):
-        tokens = list(line.split(' '))
-        tokens.pop(0)
-
-        # Empty values with null (0th index)
-        self.value_info = [None] * (int(tokens.pop(0)) + 1)
-
-    def _output(self, line):
-        tokens = list(line.split(' '))
-        tokens.pop(0)
-
-        count = int(tokens.pop(0))
-
-        for i in range(count):
-            self.output.append(int(tokens.pop(0)))
-
-    def _input(self, line):
-        tokens = list(line.split(' '))
-        tokens.pop(0)
-
-        count = int(tokens.pop(0))
-
-        for i in range(count):
-            self.input.append(int(tokens.pop(0)))
-
-    def _node(self, line):
-        tokens = list(line.split(' '))
-        tokens.pop(0)
-
-        return int(tokens.pop(0))
-
-    def _exec(self, line):
-        tokens = list(line.split(' '))
-
-        op_type = tokens.pop(0)
-        output_count = int(tokens.pop(0))
-        input_count = int(tokens.pop(0))
-        attribute_count = int(tokens.pop(0))
-
-        # parse output IDs
-        output = []
-        for i in range(output_count):
-            output.append(int(tokens.pop(0)))
-
-        # parse input IDs
-        input = []
-        for i in range(input_count):
-            input.append(int(tokens.pop(0)))
-
-        # parse attribute values
-        attribute = []
-        for i in range(attribute_count):
-            _ = tokens.pop(0)  # drop name length
-            _ = tokens.pop(0)  # drop attribute name
-            attr_type = int(tokens.pop(0))
-
-            if attr_type == 1:  # FLOAT
-                value = float(tokens.pop(0))
-            elif attr_type == 2:  # INT
-                value = int(tokens.pop(0))
-            elif attr_type == 3:  # STRING
-                count = int(tokens.pop(0))
-                value = ''
-                while len(value) < count:
-                    if len(value) != 0:
-                        value += ' '
-                    value += tokens.pop(0)
-            elif attr_type == 6:  # FLOATS
-                count = int(tokens.pop(0))
-                value = []
-                for i in range(count):
-                    value.append(float(tokens.pop(0)))
-            elif attr_type == 7:  # INTS
-                count = int(tokens.pop(0))
-                value = []
-                for i in range(count):
-                    value.append(int(tokens.pop(0)))
-            elif attr_type == 8:  # STRINGS
-                count = int(tokens.pop(0))
-                value = []
-                for i in range(count):
-                    count2 = int(tokens.pop(0))
-                    value2 = ''
-
-                    while len(value2) < count2:
-                        if len(value2) != 0:
-                            value2 += ' '
-                        value2 += tokens.pop(0)
-
-                    value.append(value2)
-            else:
-                raise Exception('AttributeType: {} is not supported yet'.format(attr_type))
-
-            attribute.append(value)
-
-        # Get Operator
-        op = self.backend.opset[op_type]
-        if op is None:
-            raise Exception('op_type {} is not supported yet'.format(op_type))
-
-        argcount = self.backend.argcount[op_type]
-
-        # Make argument for the operator
-        # check minimum input count
-        if len(input) < argcount[0]:
-            raise Exception('op_type {} must have at least {} args but {}'.format(op_type, argcount[0], len(input)))
-
-        args = [output_count]
-        if argcount[1] != -1:  # argcount[1] == -1 means maximum argument count will be unlimited
-            for i in range(argcount[1]):
-                if i < len(input):
-                    args.append(self.value_info[input[i]])
-                else:
-                    args.append(None)
-        else:
-            args.extend([self.value_info[id] for id in input])
-
-        args.extend(attribute)
-
-        # Execute the operator
-        result = op(*args)
-
-        # Set output
-        if type(result) is tuple:
-            for i, id in zip(range(len(result)), output):
-                self.value_info[id] = result[i]
-        else:
-            self.value_info[output[0]] = result
-
-        return True
+    def run(self):
+        for line in iter(self.stderr.readline, b''):
+            print(f'{WARN}stderr> ', line.decode('utf-8'), END, flush=True)
 
 
 class BackendRep(object):
     def __init__(self, path):
-        self.opset = None
-        self.graph_count = 0
-
-        self.text = {}
-        self.data = {}
-
-        # parse connx
-        self.__parse_connx(os.path.join(path, 'model.connx'))
-
-        # read text
-        for graph_id in range(self.graph_count):
-            self.text[graph_id] = Graph(self, path, graph_id)
-
-    def __parse_connx(self, path):
-        lines = self.__read_text(path)
-
-        # check connx version
-        tokens = lines[0].split(' ')
-        if tokens.pop(0) != 'connx' or int(tokens.pop(0)) != 3:
-            raise Exception('not supported connx version: {}'.format(lines[0].trim()))
-
-        # parse opset_import
-        tokens = lines[1].split(' ')
-        specs = []
-        tokens.pop(0)
-        for i in range(int(tokens.pop(0))):
-            domain_len = int(tokens.pop(0))
-            domain = tokens.pop(0)
-            while len(domain) < domain_len:
-                domain += ' ' + tokens.pop(0)
-
-            version = int(tokens.pop(0))
-
-            specs.append({'domain': domain, 'version': version})
-
-        self.opset = get_opset(specs)
-        self.argcount = get_argcount(specs)
-
-        # parse graph
-        tokens = lines[2].split(' ')
-        tokens.pop(0)
-        self.graph_count = int(tokens.pop(0))
-
-    def __read_text(self, path):
-        with open(path, 'r') as f:
-            return f.readlines()
+        self.path = path
 
     def run(self, inputs, **kwargs):  # type: (Any, **Any) -> Tuple[Any, ...]
-        graph = self.text[0]
-        return graph.interprete(inputs)
+        with subprocess.Popen(['connx', self.path], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE) as proc:
+
+            # Write number of inputs
+            proc.stdin.write(struct.pack('=I', len(inputs)))
+
+            try:
+                for input in inputs:
+                    # Write data
+                    if type(input) == str:
+                        with open(input, 'rb') as file:
+                            data = file.read()
+                            proc.stdin.write(data)
+                    elif type(input) == np.ndarray:
+                        dtype = self.get_dtype(input.dtype)
+                        proc.stdin.write(struct.pack('=I', dtype))
+                        proc.stdin.write(struct.pack('=I', len(input.shape)))
+
+                        for dim in input.shape:
+                            proc.stdin.write(struct.pack('=I', dim))
+
+                        data = input.tobytes()
+                        proc.stdin.write(data)
+                    else:
+                        raise Exception(f'Unknown input type: {type(input)}')
+            except BrokenPipeError:
+                print(proc.stderr.read().decode('utf-8'))
+            else:
+                # Terminate the connx at next loop
+                proc.stdin.write(struct.pack('=i', -1))
+                proc.stdin.close()
+
+                # Print stderr first
+                stderr = Stderr(proc.stderr)
+                stderr.start()
+
+                # save bytes for debugging purpose
+                buf = bytearray()
+
+                # Parse number of outputs
+                try:
+                    b = proc.stdout.read(4)
+                    buf += b
+                    count = struct.unpack('=i', b)[0]
+
+                    if count < 0:
+                        print('Error code:', count)
+                        stderr.join()
+                        return []
+
+                    outputs = []
+
+                    for i in range(count):
+                        # Parse data type
+                        b = proc.stdout.read(8)
+                        buf += b
+                        dtype, ndim = struct.unpack('=II', b)
+
+                        shape = []
+                        for i in range(ndim):
+                            b = proc.stdout.read(4)
+                            buf += b
+                            shape.append(struct.unpack('=I', b)[0])
+
+                        # Parse data
+                        dtype = self.get_nptype(dtype)
+                        itemsize = np.dtype(dtype).itemsize
+                        total = self.product(shape)
+                        b = proc.stdout.read(itemsize * total)
+                        buf += b
+                        output = np.frombuffer(b, dtype=dtype, count=self.product(shape)).reshape(shape)
+                        outputs.append(output)
+
+                    proc.stdout.close()
+                except Exception as e:
+                    print(f'Exception occurred: {e}')
+                    traceback.print_exc()
+                    print(f'Illegal input: {len(buf)} bytes')
+                    print(f'as string: "{buf}"')
+                    print(f'as hexa: "{buf.hex()}"')
+                    return []
+
+                stderr.join()
+
+                return outputs
+
+    def get_nptype(self, onnx_dtype):
+        if onnx_dtype == 1:
+            return np.float32
+        elif onnx_dtype == 2:
+            return np.uint8
+        elif onnx_dtype == 3:
+            return np.int8
+        elif onnx_dtype == 4:
+            return np.uint16
+        elif onnx_dtype == 5:
+            return np.int16
+        elif onnx_dtype == 6:
+            return np.int32
+        elif onnx_dtype == 7:
+            return np.int64
+        elif onnx_dtype == 8:
+            return str
+        elif onnx_dtype == 9:
+            return bool
+        elif onnx_dtype == 10:
+            return np.float16
+        elif onnx_dtype == 11:
+            return np.float64
+        elif onnx_dtype == 12:
+            return np.uint32
+        elif onnx_dtype == 13:
+            return np.uint64
+        elif onnx_dtype == 14:
+            return np.csingle
+        elif onnx_dtype == 15:
+            return np.cdouble
+        else:
+            raise Exception('Not supported dtype: {}'.format(onnx_dtype))
+
+    def get_dtype(self, numpy_type):
+        if numpy_type == np.float32:
+            return 1
+        elif numpy_type == np.uint8:
+            return 2
+        elif numpy_type == np.int8:
+            return 3
+        elif numpy_type == np.uint16:
+            return 4
+        elif numpy_type == np.int16:
+            return 5
+        elif numpy_type == np.int32:
+            return 6
+        elif numpy_type == np.int64:
+            return 7
+        elif numpy_type == str:
+            return 8
+        elif numpy_type == bool:
+            return 9
+        elif numpy_type == np.float16:
+            return 10
+        elif numpy_type == np.float64:
+            return 11
+        elif numpy_type == np.uint32:
+            return 12
+        elif numpy_type == np.uint64:
+            return 13
+        elif numpy_type == np.csingle:
+            return 14
+        elif numpy_type == np.cdouble:
+            return 15
+        else:
+            raise Exception('Not supported type: {}'.format(numpy_type))
+
+    def product(self, shape):
+        p = 1
+        for dim in shape:
+            p *= dim
+
+        return p
