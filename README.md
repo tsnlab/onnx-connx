@@ -43,12 +43,10 @@ onnx-connx$ bin/dump [onnx path]  # This utility will dump onnx or pb to text us
 
 ## Test
 ## Run test 
+connx binary must in the PATH.
+
 ```sh
-onnx-connx$ make test
-```
-## Convert all test cases that connx supports
-```sh
-onnx-connx$ make convert-test [ONNX_HOME=[onnx install dir]] [CONNX_HOME=[connx source dir]] # ONNX_HOME and CONNX_HOME can be omitted
+onnx-connx$ PATH=$PATH:[CONNX binary path] make test
 ```
 
 ## Convert individual test case
@@ -57,10 +55,11 @@ onnx-connx$ bin/convert [onnx test case path] [connx test case path]
 ```
 
 ## Run connx backend
-connx backend will compile the ONNX to CONNX and run it using NumPy operators.
+connx backend will compile the ONNX to CONNX and run it using connx.
+connx binary must in the PATH.
 
 ```sh
-python -m onnx_connx.backend [onnx model] [[input tensor] ...]
+PATH=$PATH:[CONNX binary path] python -m onnx_connx.backend [onnx model] [[input tensor] ...]
 ```
 
 ## Run MNIST example
