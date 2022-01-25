@@ -1,10 +1,12 @@
-import sys
-import os
 import argparse
+import os
+import struct
+import sys
+
 import numpy as np
 import onnx
 from onnx import numpy_helper
-import struct
+
 from .proto import ConnxModelProto
 
 

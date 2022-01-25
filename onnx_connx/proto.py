@@ -1,10 +1,12 @@
-import sys
-import os
 import itertools
+import os
+import struct
+import sys
+
 import onnx
 from onnx import numpy_helper
+
 from .opset import get_attrset
-import struct
 
 
 class ConnxObject:

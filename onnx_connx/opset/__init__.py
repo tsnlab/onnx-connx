@@ -1,5 +1,5 @@
-from .opset_v18 import version as default_version
 from .opset_v18 import attrset as default_attrset
+from .opset_v18 import version as default_version
 
 
 _versions = {

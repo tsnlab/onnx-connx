@@ -1,14 +1,12 @@
-import os
 import argparse
-import tempfile
 import cProfile
-from typing import Tuple, Any, Text, Sequence, Dict, Optional
-import numpy
+import os
+import tempfile
+from typing import Any, Dict, Optional, Sequence, Text, Tuple
 
-from onnx import numpy_helper
+import numpy
 import onnx.checker
-import onnx.onnx_cpp2py_export.checker as c_checker
-from onnx import ModelProto, NodeProto, IR_VERSION
+from onnx import ModelProto, NodeProto, numpy_helper
 
 from .backend_rep import BackendRep
 from .compiler import compile_from_model

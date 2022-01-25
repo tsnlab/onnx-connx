@@ -2,7 +2,7 @@ import struct
 import subprocess
 import threading
 import traceback
-from typing import Tuple, Any
+from typing import Any, Tuple
 
 import numpy as np
 
