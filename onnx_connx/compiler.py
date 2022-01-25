@@ -38,8 +38,7 @@ def compile(*_args: str) -> int:
     parser.add_argument('-o', metavar='output directory', type=str, default='out', nargs='?',
                         help='output directory(default is out)')
     # parser.add_argument('-p', metavar='profile', type=str, nargs='?', help='specify configuration file')
-    # parser.add_argument('-c', metavar='comment', type=str, nargs='?', choices=['true', 'false', 'True', 'False'],
-    #                     help='output comments(true or false)')
+    parser.add_argument('-c', action='store_true', help='output comments')
 
     # parse args
     if len(_args) > 0:
@@ -54,6 +53,7 @@ def compile(*_args: str) -> int:
             if args.d:
                 model.dump()
             else:
+                model.set_config('comment', args.c)
                 model.compile(args.o)
         elif path.endswith('.pb'):
             tensor = load_tensor(path)

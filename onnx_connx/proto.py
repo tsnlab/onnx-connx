@@ -37,6 +37,7 @@ class ConnxModelProto(ConnxObject):
     def __init__(self, proto):
         super().__init__(proto)
 
+        self.config = {}
         self.next_graph_id = 0
 
         # Parse opset_import
@@ -49,6 +50,12 @@ class ConnxModelProto(ConnxObject):
 
         # parse
         self.graph = ConnxGraphProto(proto.graph, self)
+
+    def set_config(self, name, value):
+        self.config[name] = value
+
+    def get_config(self, name):
+        return self.config[name]
 
     def alloc_graph_id(self):
         id = self.next_graph_id
@@ -89,7 +96,7 @@ class ConnxModelProto(ConnxObject):
 
         with open(os.path.join(path, 'model.connx'), 'w') as out:
             # Write connx version
-            out.write('connx 3\n')
+            out.write('connx 4\n')
 
             # Write opset_import
             out.write('opset_import ')
@@ -582,10 +589,6 @@ class ConnxAttributeProto(ConnxObject):
             self.value().dump(depth + 2)
 
     def compile(self, out):
-        out.write(str(len(self.proto.name)))
-        out.write(' ')
-        out.write(self.proto.name)
-        out.write(' ')
         out.write(str(self.proto.type))
 
         if self.proto.type == 0:
@@ -772,5 +775,35 @@ class ConnxNodeProto(ConnxObject):
         for attribute in self.attribute:
             out.write(' ')
             attribute.compile(out)
+
+        if self.get_root().get_config('comment'):
+            out.write(' # ')
+            out.write(str(len(self.proto.name)))
+            if len(self.proto.name) > 0:
+                out.write(' ')
+                out.write(self.proto.name)
+
+            for i in range(len(self.proto.output)):
+                value_info = self.parent.get_value_info(self.proto.output[i])
+                out.write(' ')
+                out.write(str(len(self.proto.name)))
+                if len(self.proto.name) > 0:
+                    out.write(' ')
+                    out.write(self.proto.name)
+
+            for i in range(len(self.proto.input)):
+                value_info = self.parent.get_value_info(self.proto.input[i])
+                out.write(' ')
+                out.write(str(len(self.proto.name)))
+                if len(self.proto.name) > 0:
+                    out.write(' ')
+                    out.write(self.proto.name)
+
+            for attribute in self.attribute:
+                out.write(' ')
+                out.write(str(len(attribute.proto.name)))
+                if len(attribute.proto.name) > 0:
+                    out.write(' ')
+                    out.write(attribute.proto.name)
 
         out.write('\n')
