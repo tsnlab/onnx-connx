@@ -1,2 +1,5 @@
 #!/bin/bash
-python -m onnx_connx -d $1 | grep op_type | sed 's/\t*op_type //' | sort | uniq
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+$SCRIPT_DIR/dump $1 | grep op_type | sed 's/[ ]*op_type: "//' | sed 's/"//' | sort | uniq

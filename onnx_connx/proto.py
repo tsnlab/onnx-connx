@@ -702,6 +702,9 @@ class ConnxNodeProto(ConnxObject):
         root = self.get_root()
         attrset = root.attrset[proto.op_type]
 
+        if attrset is None:
+            raise Exception(f'op_type {proto.op_type} is not supported yet')
+
         for default_attr in attrset:
             original_attr = get_attribute_proto(default_attr.name)
             if original_attr is not None:
