@@ -1,7 +1,10 @@
 import argparse
 import cProfile
 import os
+import random
+import shutil
 import tempfile
+import time
 from typing import Any, Dict, Optional, Sequence, Text, Tuple
 
 import numpy
@@ -11,6 +14,9 @@ from onnx import ModelProto, NodeProto, numpy_helper
 from .backend_rep import BackendRep
 from .compiler import compile_from_model
 from .opset import get_attrset
+
+
+_CONNX_PATHS = ['onnx_connx/connx', './connx', 'connx']
 
 
 class Backend(object):
@@ -43,16 +49,25 @@ class Backend(object):
                 ):  # type: (...) -> Optional[BackendRep]
         onnx.checker.check_model(model)
 
+        # find connx
+        for path in _CONNX_PATHS:
+            if shutil.which(path) is not None:
+                connx_path = path
+                break
+
+        if connx_path is None:
+            raise Exception(f'Cannot find connx in paths: {_CONNX_PATHS}')
+
         if 'out' in kwargs:
-            path = kwargs['out']
+            model_path = kwargs['out']
             os.makedirs(path, exist_ok=True)
 
-            compile_from_model(model, path)
-            return BackendRep(path)
+            compile_from_model(model, model_path)
+            return BackendRep(connx_path, model_path)
         else:
-            path = tempfile.TemporaryDirectory()
-            compile_from_model(model, path.name)
-            return BackendRep(path.name)
+            model_path = os.path.join(tempfile.gettempdir(), f'connx.{time.time() + random.random()}')
+            compile_from_model(model, model_path)
+            return BackendRep(connx_path, model_path, delete_path=True)
 
     @classmethod
     def run_model(cls,
@@ -109,7 +124,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='ONNX Reference Backend')
+    parser = argparse.ArgumentParser(description='CONNX Backend')
     parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
     parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
     parser.add_argument('-o', metavar='output directory', type=str, nargs='?',

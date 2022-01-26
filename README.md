@@ -43,10 +43,10 @@ onnx-connx$ bin/dump [onnx path]  # This utility will dump onnx or pb to text us
 
 ## Test
 ## Run test 
-connx binary must in the PATH.
+connx binary must in onnx\_connx, current directory or in PATH environment variable.
 
 ```sh
-onnx-connx$ PATH=$PATH:[CONNX binary path] make test
+onnx-connx$ make test
 ```
 
 ## Convert individual test case
@@ -56,10 +56,10 @@ onnx-connx$ bin/convert [onnx test case path] [connx test case path]
 
 ## Run connx backend
 connx backend will compile the ONNX to CONNX and run it using connx.
-connx binary must in the PATH.
+connx binary must in onnx\_connx, current directory or in PATH environment variable.
 
 ```sh
-PATH=$PATH:[CONNX binary path] python -m onnx_connx.backend [onnx model] [[input tensor] ...]
+python -m onnx_connx.backend [onnx model] [[input tensor] ...]
 ```
 
 ## Run MNIST example

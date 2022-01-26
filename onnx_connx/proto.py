@@ -37,7 +37,9 @@ class ConnxModelProto(ConnxObject):
     def __init__(self, proto):
         super().__init__(proto)
 
-        self.config = {}
+        self.config = {
+            'comment': False
+        }
         self.next_graph_id = 0
 
         # Parse opset_import
@@ -232,7 +234,6 @@ class ConnxGraphProto(ConnxObject):
             idx = 0
             ref_count = self.get_ref_count(initializer.proto.name)
             if ref_count > 1:
-                print('create proto')
                 node = self.make_ref_count(initializer.proto.name, initializer.id, ref_count)
                 self.node.insert(idx, node)
                 idx += 1
@@ -784,26 +785,27 @@ class ConnxNodeProto(ConnxObject):
                 out.write(self.proto.name)
 
             for i in range(len(self.proto.output)):
-                value_info = self.parent.get_value_info(self.proto.output[i])
+                name = self.proto.output[i]
                 out.write(' ')
-                out.write(str(len(self.proto.name)))
-                if len(self.proto.name) > 0:
+                out.write(str(len(name)))
+                if len(name) > 0:
                     out.write(' ')
-                    out.write(self.proto.name)
+                    out.write(name)
 
             for i in range(len(self.proto.input)):
-                value_info = self.parent.get_value_info(self.proto.input[i])
+                name = self.proto.input[i]
                 out.write(' ')
-                out.write(str(len(self.proto.name)))
-                if len(self.proto.name) > 0:
+                out.write(str(len(name)))
+                if len(name) > 0:
                     out.write(' ')
-                    out.write(self.proto.name)
+                    out.write(name)
 
             for attribute in self.attribute:
+                name = attribute.proto.name
                 out.write(' ')
-                out.write(str(len(attribute.proto.name)))
-                if len(attribute.proto.name) > 0:
+                out.write(str(len(name)))
+                if len(name) > 0:
                     out.write(' ')
-                    out.write(attribute.proto.name)
+                    out.write(name)
 
         out.write('\n')
