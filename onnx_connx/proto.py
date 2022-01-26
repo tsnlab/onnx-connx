@@ -38,7 +38,7 @@ class ConnxModelProto(ConnxObject):
         super().__init__(proto)
 
         self.config = {
-            'comment': False
+            'comment': True
         }
         self.next_graph_id = 0
 
@@ -783,32 +783,28 @@ class ConnxNodeProto(ConnxObject):
         if self.get_root().get_config('comment'):
             out.write(' # ')
             out.write(str(len(self.proto.name)))
-            if len(self.proto.name) > 0:
-                out.write(' ')
-                out.write(self.proto.name)
+            out.write(' ')
+            out.write(self.proto.name)
 
             for i in range(len(self.proto.output)):
                 name = self.proto.output[i]
                 out.write(' ')
                 out.write(str(len(name)))
-                if len(name) > 0:
-                    out.write(' ')
-                    out.write(name)
+                out.write(' ')
+                out.write(name)
 
             for i in range(len(self.proto.input)):
                 name = self.proto.input[i]
                 out.write(' ')
                 out.write(str(len(name)))
-                if len(name) > 0:
-                    out.write(' ')
-                    out.write(name)
+                out.write(' ')
+                out.write(name)
 
             for attribute in self.attribute:
                 name = attribute.proto.name
                 out.write(' ')
                 out.write(str(len(name)))
-                if len(name) > 0:
-                    out.write(' ')
-                    out.write(name)
+                out.write(' ')
+                out.write(name)
 
         out.write('\n')

@@ -17,10 +17,13 @@ backend_test.exclude(r'test_momentum_*')
 backend_test.exclude(r'nesterov_momentum_*')
 backend_test.exclude(r'test_batchnorm_epsilon_training_mode')
 backend_test.exclude(r'test_batchnorm_example_training_mode')
+
+# Exclude not supported operators
 backend_test.exclude(r'test_identity_sequence_cpu')
 backend_test.exclude(r'test_cast.*FLOAT16.*')
 backend_test.exclude(r'test_cast.*BFLOAT16.*')
 backend_test.exclude(r'test_cast.*STRING.*')
+backend_test.exclude(r'test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn')
 
 # Exclude deprecated operators
 backend_test.exclude(r'test_scatter_*')

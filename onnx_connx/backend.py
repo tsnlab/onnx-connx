@@ -67,7 +67,7 @@ class Backend(object):
         else:
             model_path = os.path.join(tempfile.gettempdir(), f'connx.{time.time() + random.random()}')
             compile_from_model(model, model_path)
-            return BackendRep(connx_path, model_path, delete_path=True)
+            return BackendRep(connx_path, model_path, delete_path=False)
 
     @classmethod
     def run_model(cls,
