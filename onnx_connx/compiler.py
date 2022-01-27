@@ -1,12 +1,12 @@
 import argparse
 import os
-import struct
 import sys
 
 import numpy as np
 import onnx
 from onnx import numpy_helper
 
+from . import read_pb, write_data
 from .proto import ConnxModelProto
 
 
@@ -21,14 +21,6 @@ def compile_from_model(model_proto, path) -> int:
     connx.compile(path)
 
     return 0
-
-
-def load_tensor(path) -> onnx.TensorProto:
-    tensor = onnx.TensorProto()
-    with open(path, 'rb') as f:
-        tensor.ParseFromString(f.read())
-
-    return tensor
 
 
 def compile(*_args: str) -> int:
@@ -56,7 +48,8 @@ def compile(*_args: str) -> int:
                 model.set_config('comment', args.c)
                 model.compile(args.o)
         elif path.endswith('.pb'):
-            tensor = load_tensor(path)
+            with open(path, 'rb') as fp:
+                tensor = read_pb(fp)
 
             if args.d:
                 array = numpy_helper.to_array(tensor)
@@ -67,12 +60,6 @@ def compile(*_args: str) -> int:
                 name = os.path.basename(path).strip('.pb') + '.data'
 
                 with open(os.path.join(args.o, name), 'wb') as out:
-                    out.write(struct.pack('=I', tensor.data_type))
-                    out.write(struct.pack('=I', len(tensor.dims)))
-                    for i in range(len(tensor.dims)):
-                        out.write(struct.pack('=I', tensor.dims[i]))
-
-                    array = numpy_helper.to_array(tensor)
-                    out.write(array.tobytes())
+                    write_data(out, tensor)
 
     return 0

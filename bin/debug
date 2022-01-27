@@ -17,7 +17,7 @@ from onnx import helper
 parser = argparse.ArgumentParser(description='Dump all the intermediate output to files')
 parser.add_argument('model', type=pathlib.Path, help='ONNX model path')
 parser.add_argument('inputs', nargs='*', type=argparse.FileType('rb'), help='input .pb files')
-parser.add_argument('-o', nargs='?', default='out', type=pathlib.Path, help='output directory to store intermediate outputs')
+parser.add_argument('-o', nargs='?', default='connx.log', type=pathlib.Path, help='output directory to store intermediate outputs')
 args = parser.parse_args()
 
 # validate onnx model
@@ -62,10 +62,7 @@ os.remove(path)
 # run
 outputs = session.run(outputs, inputs)
 
-# output to stdout
-print(len(files))
-print(len(outputs))
-
+# output to directory
 os.makedirs(args.o, exist_ok=True)
 for file, output in zip(files, outputs):
     path = os.path.join(args.o, file.replace('/', '_'))

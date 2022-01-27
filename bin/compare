@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+
+import argparse
+import numpy as np
+import os
+import pathlib
+import sys
+from glob import glob
+
+from onnx import helper
+
+# import onnx_connx
+file_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(file_path, '..'))
+
+from onnx_connx import read_data, read_npy  # noqa: E402
+
+
+# prase arguments
+parser = argparse.ArgumentParser(description='Compare .data files and .npy files')
+parser.add_argument('data_dir', type=pathlib.Path, help='.data log dir')
+parser.add_argument('npy_dir', type=pathlib.Path, help='.npy log dir')
+parser.add_argument('--threshold', nargs='?', default=1e-4, type=float, help='tolerance of MSE, default: 1e-4')
+parser.add_argument('--width', nargs='?', default=160, type=int, help='max print column width')
+parser.add_argument('-v', action='store_true', help='verbose')
+args = parser.parse_args()
+
+data_files = glob(os.path.join(args.data_dir, '*.data'))
+npy_files = glob(os.path.join(args.npy_dir, '*.npy'))
+
+
+RED = '\033[91m'
+GREEN = '\033[92m'
+END = '\033[0m'
+
+def shape_equals(shape1, shape2):
+    if len(shape1) != len(shape1):
+        return False
+
+    for i in range(len(shape1)):
+        if shape1[i] != shape2[i]:
+            return False
+
+    return True
+
+
+np.set_printoptions(suppress=False, threshold=sys.maxsize, linewidth=args.width)
+
+max_name = 0
+for data_file in data_files:
+    name = os.path.basename(data_file)[:-5]
+    if len(name) > max_name:
+        max_name = len(name)
+
+for data_file in data_files:
+    name = os.path.basename(data_file)[:-5]
+    npy_file = os.path.join(args.npy_dir, name + '.npy')
+
+    if npy_file in npy_files:
+        with open(data_file, 'rb') as data_in:
+            with open(npy_file, 'rb') as npy_in:
+                data = read_data(data_in)
+                npy = read_npy(npy_in)
+
+                title = f'{name} {" " * (max_name - len(name))}'
+                if not shape_equals(data.shape, npy.shape):
+                    print(f'{title} {RED}shape mismatch:{END} {data.shape} != {npy.shape}')
+                    continue
+
+                diff = np.sqrt(((data - npy)**2).sum()) / data.size
+
+                if diff < args.threshold:
+                    print(f'{title} {diff} {GREEN}PASS{END}')
+                else:
+                    print(f'{title} {diff} {RED}FAIL{END}')
+
+                    if args.v:
+                        print('data')
+                        print(data)
+                        print('npy')
+                        print(npy)
