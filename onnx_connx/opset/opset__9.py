@@ -1,0 +1,5 @@
+attrset = {
+    'Cosh': [],
+    'NonZero': [],
+    'Sinh': [],
+}

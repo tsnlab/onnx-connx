@@ -48,7 +48,7 @@ class ConnxModelProto(ConnxObject):
             opset_import = proto.opset_import[i]
             specs.append({'domain': opset_import.domain, 'version': opset_import.version})
 
-        self.attrset = get_attrset(specs)
+        self.attrset, self.verset = get_attrset(specs)
 
         # parse
         self.graph = ConnxGraphProto(proto.graph, self)
@@ -98,7 +98,7 @@ class ConnxModelProto(ConnxObject):
 
         with open(os.path.join(path, 'model.connx'), 'w') as out:
             # Write connx version
-            out.write('connx 4\n')
+            out.write('connx 5\n')
 
             # Write opset_import
             out.write('opset_import ')
@@ -697,9 +697,11 @@ class ConnxNodeProto(ConnxObject):
 
             return None
 
+        root = self.get_root()
+
+        self.version = root.verset[proto.op_type]
         self.attribute = []
 
-        root = self.get_root()
         attrset = root.attrset[proto.op_type]
 
         if attrset is None:
@@ -726,6 +728,8 @@ class ConnxNodeProto(ConnxObject):
         self._tab(out, depth + 1)
         out.write('op_type ')
         out.write(self.proto.op_type)
+        out.write('_')
+        out.write(str(self.version))
         out.write('\n')
 
         self._tab(out, depth + 1)
@@ -750,6 +754,8 @@ class ConnxNodeProto(ConnxObject):
 
     def compile(self, out):
         out.write(self.proto.op_type)
+        out.write('_')
+        out.write(str(self.version))
         out.write(' ')
 
         out.write(str(len(self.proto.output)))

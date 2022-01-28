@@ -32,7 +32,7 @@ class Backend(object):
             opset_import = model.opset_import[i]
             specs.append({'domain': opset_import.domain, 'version': opset_import.version})
 
-        attrset = get_attrset(specs)
+        attrset, attrver = get_attrset(specs)
 
         for i in range(len(model.graph.node)):
             if model.graph.node[i].op_type not in attrset or attrset[model.graph.node[i].op_type] is None:
