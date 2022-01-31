@@ -25,12 +25,12 @@ def compile_from_model(model_proto, path) -> int:
 
 def compile(*_args: str) -> int:
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
-    parser.add_argument('onnx', metavar='onnx', nargs='+', help='an input ONNX model file or tensor pb file')
-    parser.add_argument('-d', action='store_true', help='dump human readable onnx metadata to standard output')
-    parser.add_argument('-o', metavar='output directory', type=str, default='out', nargs='?',
+    parser.add_argument('onnx', metavar='onnx model file', nargs=1, help='an input ONNX model file or tensor pb file')
+    parser.add_argument('out', metavar='output directory', nargs='?', type=str, default='out',
                         help='output directory(default is out)')
-    # parser.add_argument('-p', metavar='profile', type=str, nargs='?', help='specify configuration file')
+    parser.add_argument('-d', action='store_true', help='dump human readable onnx metadata to standard output')
     parser.add_argument('-c', action='store_true', help='output comments')
+    # parser.add_argument('-p', metavar='profile', type=str, nargs='?', help='specify configuration file')
 
     # parse args
     if len(_args) > 0:
@@ -46,7 +46,7 @@ def compile(*_args: str) -> int:
                 model.dump()
             else:
                 model.set_config('comment', args.c)
-                model.compile(args.o)
+                model.compile(args.out)
         elif path.endswith('.pb'):
             with open(path, 'rb') as fp:
                 tensor = read_pb(fp)
@@ -59,7 +59,7 @@ def compile(*_args: str) -> int:
             else:
                 name = os.path.basename(path).strip('.pb') + '.data'
 
-                with open(os.path.join(args.o, name), 'wb') as out:
+                with open(os.path.join(args.out, name), 'wb') as out:
                     write_data(out, tensor)
 
     return 0

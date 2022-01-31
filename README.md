@@ -11,8 +11,8 @@ pip install git+https://github.com/semihlab/onnx-connx
 
 ## Convert ONNX to CONNX model
 ```sh
-python -m onnx\_connx --help        # to get help message
-python -m onnx\_connx [onnx model]  # to convert onnx to connx
+python -m onnx\_connx --help                    # to get help message
+python -m onnx\_connx [onnx model] [output dir] # to convert onnx to connx
 ```
 
 # For developers
