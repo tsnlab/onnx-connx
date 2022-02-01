@@ -130,7 +130,10 @@ class ConnxGraphProto(ConnxObject):
         self.id = self.get_root().alloc_graph_id()
 
         self.initializer = [ConnxTensorProto(proto, self) for proto in proto.initializer]
-        self.sparse_initializer = [ConnxSparseTensorProto(proto, self) for proto in proto.sparse_initializer]
+        if hasattr(proto, 'sparse_initializer'):
+            self.sparse_initializer = [ConnxSparseTensorProto(proto, self) for proto in proto.sparse_initializer]
+        else:
+            self.sparse_initializer = []
         self.input = []
         self.output = []
         self.value_info = [ConnxValueInfoProto(proto, self) for proto in proto.value_info]

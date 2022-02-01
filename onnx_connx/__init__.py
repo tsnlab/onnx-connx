@@ -76,6 +76,41 @@ def get_dtype(numpy_type: type):
         raise Exception('Not supported type: {}'.format(numpy_type))
 
 
+def get_DataType(numpy_type: type):
+    if numpy_type == np.float32:
+        return onnx.TensorProto.DataType.FLOAT
+    elif numpy_type == np.uint8:
+        return 2
+    elif numpy_type == np.int8:
+        return 3
+    elif numpy_type == np.uint16:
+        return 4
+    elif numpy_type == np.int16:
+        return 5
+    elif numpy_type == np.int32:
+        return 6
+    elif numpy_type == np.int64:
+        return 7
+    elif numpy_type == str:
+        return 8
+    elif numpy_type == bool:
+        return 9
+    elif numpy_type == np.float16:
+        return 10
+    elif numpy_type == np.float64:
+        return 11
+    elif numpy_type == np.uint32:
+        return 12
+    elif numpy_type == np.uint64:
+        return 13
+    elif numpy_type == np.csingle:
+        return 14
+    elif numpy_type == np.cdouble:
+        return 15
+    else:
+        raise Exception('Not supported type: {}'.format(numpy_type))
+
+
 def product(shape):
     p = 1
     for dim in shape:
