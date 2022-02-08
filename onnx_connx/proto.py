@@ -327,10 +327,10 @@ class ConnxGraphProto(ConnxObject):
 
         for i in range(idx, len(self.node)):
             if name in self.node[i].proto.input:
-                count += 1
+                count += list(self.node[i].proto.input).count(name)
 
         if name in self.proto.output:
-            count += 1
+            count += self.proto.output.count(name)
 
         return count
 
