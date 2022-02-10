@@ -232,7 +232,7 @@ class ConnxGraphProto(ConnxObject):
 
         self.node = [ConnxNodeProto(proto, self) for proto in proto.node]
 
-        # Internal operators
+        # Calculate ref_count
         for initializer in self.initializer:
             idx = 0
             ref_count = self.get_ref_count(initializer.proto.name)
@@ -249,6 +249,15 @@ class ConnxGraphProto(ConnxObject):
                 self.node.insert(idx, node)
                 idx += 1
 
+        for input in self.input:
+            idx = 0
+            ref_count = self.get_ref_count(input.proto.name)
+            if ref_count > 1:
+                node = self.make_ref_count(input.proto.name, input.id, ref_count)
+                self.node.insert(idx, node)
+                idx += 1
+
+        # insert _ref_0 node
         idx = 0
         length = len(self.node)
         while idx < length:
@@ -287,37 +296,37 @@ class ConnxGraphProto(ConnxObject):
         out.write('\n')
 
         self._tab(out, depth + 1)
-        out.write('initializer\n')
+        out.write(f'initializer: {len(self.initializer)}\n')
 
         for initializer in self.initializer:
             initializer.dump(depth + 2)
 
         self._tab(out, depth + 1)
-        out.write('sparse_initializer\n')
+        out.write(f'sparse_initializer: {len(self.sparse_initializer)}\n')
 
         for sparse_initializer in self.sparse_initializer:
             sparse_initializer.dump(depth + 2)
 
         self._tab(out, depth + 1)
-        out.write('input\n')
+        out.write(f'input: {len(self.input)}\n')
 
         for input in self.input:
             input.dump(depth + 2)
 
         self._tab(out, depth + 1)
-        out.write('output\n')
+        out.write(f'output: {len(self.output)}\n')
 
         for output in self.output:
             output.dump(depth + 2)
 
         self._tab(out, depth + 1)
-        out.write('value_info\n')
+        out.write(f'value_info: {len(self.value_info)}\n')
 
         for value_info in self.value_info:
             value_info.dump(depth + 2)
 
         self._tab(out, depth + 1)
-        out.write('node\n')
+        out.write(f'node: {len(self.node)}\n')
 
         for node in self.node:
             node.dump(depth + 2)
@@ -325,12 +334,10 @@ class ConnxGraphProto(ConnxObject):
     def get_ref_count(self, name, idx=0):
         count = 0
 
-        for i in range(idx, len(self.node)):
-            if name in self.node[i].proto.input:
-                count += list(self.node[i].proto.input).count(name)
+        for node in self.node:
+            count += list(node.proto.input).count(name)
 
-        if name in self.proto.output:
-            count += self.proto.output.count(name)
+        count += list(node.proto.output).count(name)
 
         return count
 
