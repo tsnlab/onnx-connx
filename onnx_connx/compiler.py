@@ -55,6 +55,7 @@ def compile(*_args: str) -> int:
                 array = numpy_helper.to_array(tensor)
 
                 np.set_printoptions(suppress=True, threshold=sys.maxsize, linewidth=160)
+                print(array.dtype, array.shape)
                 print(array)
             else:
                 name = os.path.basename(path).strip('.pb') + '.data'

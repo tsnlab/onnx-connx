@@ -1,7 +1,8 @@
 # ONNX to CONNX Converter
-onnx-connx is a tool which converts ONNX to CONNX model. 
-And onnx-connx is also a NumPy ONNX Runtime implementation for CONNX.
-We don't recommend to use onnx-connx as an ONNX Runtime for NumPy is very (very) slow. 
+onnx-connx is a tool
+
+ * ONNX model to CONNX model compiler
+ * ONNX backend using CONNX engine
 
 # For users
 ## Install onnx-connx via pip
@@ -18,43 +19,53 @@ python -m onnx\_connx [onnx model] [output dir] # to convert onnx to connx
 # For developers
 ## Prepare development environments
  * python3
- * onnx               # python package, to run onnx2connx converter
  * protobuf-compiler  # to run bin/dump utility
- * tabulate           # python package, to run test cases
- * pytest-parallel    # python package, to run test cases
 
 ```sh
-$ sudo apt install python3 python3-pip python3-venv
+$ sudo apt install python3 python3-pip
 $ python3 -m pip install --user virtualenv
 $ python3 -m venv venv
 $ source venv/bin/activate
-$ pip install --upgrade pip
-$ pip install onnx
+$ pip install --upgrade pip pytest tabulate onnx
 ```
+
 ## Debug installation
 ```sh
 pip install git+file:///[path-to-onnx-connx]
 ```
 
 ## Dump onnx to text
+2 ways to dump onnx or pb file to text.
+
 ```sh
 onnx-connx$ bin/dump [onnx path]  # This utility will dump onnx or pb to text using protoc
+onnx-connx$ python -m onnx_connx -d [onnx path]  # This utility will dump onnx or pb to text using onnx_connx
 ```
 
 ## Test
-## Run test 
-connx binary must in onnx\_connx, current directory or in PATH environment variable.
-
+## Run ONNX test cases in your environment
 ```sh
-onnx-connx$ make test
+onnx-connx$ cp [connx binary path] connx
+onnx-connx$ pytest
 ```
 
-## Convert individual test case
+## Run ONNX test cases for specific onnx version
 ```sh
-onnx-connx$ bin/convert [onnx test case path] [connx test case path]
+onnx-connx$ cp [connx binary path] connx
+onnx-connx$ bin/test [onnx version]
+
 ```
 
-## Run connx backend
+## Tested ONNX versions
+|ONNX Version|Passed test cases|
+|------------|-----------------|
+|   1.7.0    |       100%      |
+|   1.8.1    |       100%      |
+|   1.9.0    |       100%      |
+|   1.10.2   |       100%      |
+
+# Run connx backend
+# Run backend
 connx backend will compile the ONNX to CONNX and run it using connx.
 connx binary must in onnx\_connx, current directory or in PATH environment variable.
 
