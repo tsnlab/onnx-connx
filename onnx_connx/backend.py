@@ -157,7 +157,7 @@ def main(args):
         print(outputs)
 
 
-if __name__ == '__main__':
+def run():
     parser = argparse.ArgumentParser(description='CONNX Backend')
     parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
     parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
@@ -172,3 +172,7 @@ if __name__ == '__main__':
         cProfile.run('main(args)')
     else:
         main(args)
+
+
+if __name__ == '__main__':
+    run()
