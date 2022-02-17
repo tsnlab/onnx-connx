@@ -61,8 +61,7 @@ class Backend(object):
             if shutil.which(path) is not None:
                 connx_path = path
                 break
-
-        if connx_path is None:
+        else:
             raise Exception(f'Cannot find connx in paths: {_CONNX_PATHS}')
 
         if 'out' in kwargs:
