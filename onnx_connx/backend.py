@@ -150,7 +150,7 @@ def main(args):
     backend = Backend.prepare(model, *kwargs)
     outputs = backend.run(inputs)
 
-    if type(outputs) == tuple:
+    if isinstance(outputs, tuple):
         for output in outputs:
             print(output)
     else:
