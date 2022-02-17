@@ -1,0 +1,3 @@
+[submodule "connx"]
+	path = connx
+	url = https://github.com/semihlab/connx
