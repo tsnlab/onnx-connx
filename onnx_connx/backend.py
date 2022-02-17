@@ -17,7 +17,15 @@ from .compiler import compile_from_model
 from .opset import get_attrset
 
 
-_CONNX_PATHS = ['onnx_connx/connx', './connx', 'connx']
+_CONNX_PATHS = [
+    os.path.join(
+        os.path.dirname(__file__),
+        'connx'
+    ),
+    'onnx_connx/connx',
+    './connx',
+    'connx'
+]
 
 
 class Backend(object):

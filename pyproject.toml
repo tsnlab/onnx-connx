@@ -12,6 +12,10 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Topic :: Software Development :: Build Tools",
 ]
+include = [
+  "onnx_connx/connx",
+  "connx"
+]
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/semihlab/onnx-connx/issues"
@@ -25,9 +29,18 @@ pytest = "^7.0.1"
 tabulate = "^0.8.9"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = [
+  "poetry-core>=1.0.0",
+  "cmake>=3.22.2",
+  "ninja>=1.10.2.3",
+  "jinja2>=2.10"
+]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 onnx2connx = 'onnx_connx.compiler:compile'
 connx-run = 'onnx_connx.backend:run'
+
+[tool.poetry.build]
+generate-setup-file = false
+script = "build_connx.py"
