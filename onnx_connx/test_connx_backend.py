@@ -35,9 +35,10 @@ backend_test.exclude(r'test_upsample_*')
 
 # Exclude malformed test cases
 if onnx.__version__ == '1.6.0':
-    backend_test.exclude(r'test_resize_upsample_sizes_nearest_ceil_half_pixel')  # nearest_mode=ceil is missing
-    backend_test.exclude(r'test_resize_upsample_sizes_nearest_floor_align_corners')  # nearest_mode=floor is missing
-    backend_test.exclude(r'test_resize_upsample_sizes_nearest_round_prefer_ceil_asymmetric')  # nearest_mode=round_prefer_ceil is missing
+    backend_test.exclude('test_resize_upsample_sizes_nearest_ceil_half_pixel')  # nearest_mode=ceil is missing
+    backend_test.exclude('test_resize_upsample_sizes_nearest_floor_align_corners')  # nearest_mode=floor is missing
+    backend_test.exclude(
+        'test_resize_upsample_sizes_nearest_round_prefer_ceil_asymmetric')  # nearest_mode=round_prefer_ceil is missing
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)

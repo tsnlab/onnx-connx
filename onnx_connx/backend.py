@@ -11,10 +11,10 @@ import numpy
 import onnx.checker
 from onnx import ModelProto, NodeProto, numpy_helper
 
+from . import get_DataType
 from .backend_rep import BackendRep
 from .compiler import compile_from_model
 from .opset import get_attrset
-from . import get_DataType
 
 
 _CONNX_PATHS = ['onnx_connx/connx', './connx', 'connx']
@@ -107,14 +107,14 @@ class Backend(object):
 
         for input, name in zip(inputs, node.input):
             value_info = onnx.helper.make_tensor_value_info(name, get_DataType(input.dtype), input.shape)
-            #value_info = onnx.ValueInfoProto()
-            #value_info.name = name
-            #value_info.type.tensor_type.elem_type = get_DataType(input.dtype)
-            #value_info.type.tensor_type.shape.dim.add()
-            #for dim in input.shape:
-            #    proto = onnx.TensorShapeProto.Dimension()
-            #    proto.dim_value = dim
-            #    value_info.type.tensor_type.shape.dim.append(proto)
+            # value_info = onnx.ValueInfoProto()
+            # value_info.name = name
+            # value_info.type.tensor_type.elem_type = get_DataType(input.dtype)
+            # value_info.type.tensor_type.shape.dim.add()
+            # for dim in input.shape:
+            #     proto = onnx.TensorShapeProto.Dimension()
+            #     proto.dim_value = dim
+            #     value_info.type.tensor_type.shape.dim.append(proto)
             model.graph.input.append(value_info)
 
         for name in node.output:
