@@ -20,18 +20,16 @@ python -m onnx\_connx [onnx model] [output dir] # to convert onnx to connx
 ## Prepare development environments
  * python3
  * protobuf-compiler  # to run bin/dump utility
+ * poetry
 
 ```sh
 $ sudo apt install python3 python3-pip
-$ python3 -m pip install --user virtualenv
-$ python3 -m venv venv
-$ source venv/bin/activate
-$ pip install --upgrade pip pytest tabulate onnx
+$ poetry install
 ```
 
 ## Debug installation
 ```sh
-pip install git+file:///[path-to-onnx-connx]
+pip install -e git+file:///[path-to-onnx-connx]
 ```
 
 ## Dump onnx to text
@@ -39,7 +37,7 @@ pip install git+file:///[path-to-onnx-connx]
 
 ```sh
 onnx-connx$ bin/dump [onnx path]  # This utility will dump onnx or pb to text using protoc
-onnx-connx$ python -m onnx_connx -d [onnx path]  # This utility will dump onnx or pb to text using onnx_connx
+onnx-connx$ onnx2connx -d [onnx path]  # This utility will dump onnx or pb to text using onnx_connx
 ```
 
 ## Test
@@ -70,7 +68,7 @@ connx backend will compile the ONNX to CONNX and run it using connx.
 connx binary must in onnx\_connx, current directory or in PATH environment variable.
 
 ```sh
-python -m onnx_connx.backend [onnx model] [[input tensor] ...]
+connx-run [onnx model] [[input tensor] ...]
 ```
 
 ## Run MNIST example
@@ -78,7 +76,7 @@ python -m onnx_connx.backend [onnx model] [[input tensor] ...]
 onnx-connx$ cd examples
 onnx-connx/examples$ ./download.sh
 onnx-connx/examples$ cd ..
-onnx-connx$ python -m onnx_connx.backend examples/mnist/model.onnx examples/mnist/input_0.pb
+onnx-connx$ connx-run examples/mnist/model.onnx examples/mnist/input_0.pb
 ```
 
 # Contribution

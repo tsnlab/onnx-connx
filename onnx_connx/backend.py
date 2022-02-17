@@ -11,10 +11,10 @@ import numpy
 import onnx.checker
 from onnx import ModelProto, NodeProto, numpy_helper
 
+from . import get_DataType
 from .backend_rep import BackendRep
 from .compiler import compile_from_model
 from .opset import get_attrset
-from . import get_DataType
 
 
 _CONNX_PATHS = ['onnx_connx/connx', './connx', 'connx']
@@ -61,8 +61,7 @@ class Backend(object):
             if shutil.which(path) is not None:
                 connx_path = path
                 break
-
-        if connx_path is None:
+        else:
             raise Exception(f'Cannot find connx in paths: {_CONNX_PATHS}')
 
         if 'out' in kwargs:
@@ -107,14 +106,14 @@ class Backend(object):
 
         for input, name in zip(inputs, node.input):
             value_info = onnx.helper.make_tensor_value_info(name, get_DataType(input.dtype), input.shape)
-            #value_info = onnx.ValueInfoProto()
-            #value_info.name = name
-            #value_info.type.tensor_type.elem_type = get_DataType(input.dtype)
-            #value_info.type.tensor_type.shape.dim.add()
-            #for dim in input.shape:
-            #    proto = onnx.TensorShapeProto.Dimension()
-            #    proto.dim_value = dim
-            #    value_info.type.tensor_type.shape.dim.append(proto)
+            # value_info = onnx.ValueInfoProto()
+            # value_info.name = name
+            # value_info.type.tensor_type.elem_type = get_DataType(input.dtype)
+            # value_info.type.tensor_type.shape.dim.add()
+            # for dim in input.shape:
+            #     proto = onnx.TensorShapeProto.Dimension()
+            #     proto.dim_value = dim
+            #     value_info.type.tensor_type.shape.dim.append(proto)
             model.graph.input.append(value_info)
 
         for name in node.output:
@@ -150,14 +149,14 @@ def main(args):
     backend = Backend.prepare(model, *kwargs)
     outputs = backend.run(inputs)
 
-    if type(outputs) == tuple:
+    if isinstance(outputs, tuple):
         for output in outputs:
             print(output)
     else:
         print(outputs)
 
 
-if __name__ == '__main__':
+def run():
     parser = argparse.ArgumentParser(description='CONNX Backend')
     parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
     parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
@@ -172,3 +171,7 @@ if __name__ == '__main__':
         cProfile.run('main(args)')
     else:
         main(args)
+
+
+if __name__ == '__main__':
+    run()
