@@ -5,7 +5,7 @@ NPROC := $(shell nproc)
 all: test mnist mobilenet yolo-tiny
 
 test:
-	pytest --workers $(NPROC) --tests-per-worker auto
+	pytest
 
 mnist:
 	python -m onnx_connx examples/mnist/* -o out/mnist
