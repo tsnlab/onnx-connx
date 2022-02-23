@@ -119,11 +119,18 @@ def product(shape):
     return p
 
 
-def read_pb(input_: io.RawIOBase) -> onnx.TensorProto:
-    tensor = onnx.TensorProto()
-    tensor.ParseFromString(input_.read())
-
-    return tensor
+def read_pb(input_: io.RawIOBase) -> Union[onnx.TensorProto, onnx.SequenceProto, onnx.MapProto, onnx.OptionalProto]:
+    buf = input_.read()
+    if buf[0] == 0x08:  # TensorProto
+        tensor = onnx.TensorProto()
+        tensor.ParseFromString(buf)
+        return tensor
+    elif buf[0] == 0x0a:  # OptionalProto
+        optional = onnx.OptionalProto()
+        optional.ParseFromString(buf)
+        return optional
+    else:
+        raise Exception(f'Unspported proto: 0x{buf[0]:02x}')
 
 
 def read_npy(input_: io.RawIOBase) -> np.ndarray:

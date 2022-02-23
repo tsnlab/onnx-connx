@@ -568,6 +568,10 @@ class ConnxTypeProto(ConnxObject):
             out.write('WARNING: sequence type is not supported')
         elif self.proto.map_type is not None:
             out.write('WARNING: map type is not supported')
+        elif self.proto.optional_type is not None:
+            out.write('WARNING: optional type is not supported')
+        elif self.proto.sparse_tensor_type is not None:
+            out.write('WARNING: sparse_tensor type is not supported')
 
 
 class ConnxAttributeProto(ConnxObject):

@@ -63,6 +63,7 @@ onnx-connx$ bin/test [onnx version]
 |   1.8.1    |       100%      |
 |   1.9.0    |       100%      |
 |   1.10.2   |       100%      |
+|   1.11.0   |       100%      |
 
 # Run connx backend
 # Run backend

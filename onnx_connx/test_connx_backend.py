@@ -26,6 +26,11 @@ backend_test.exclude(r'test_cast.*BFLOAT16.*')
 backend_test.exclude(r'test_cast.*STRING.*')
 backend_test.exclude(r'test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn')
 
+# Exclude not supported types
+if onnx.__version__ == '1.11.0':
+    backend_test.exclude(r'identity_opt')
+    backend_test.exclude(r'sequence')
+
 # Exclude not supported features Resize TF_CROP_AND_RESIZE
 backend_test.exclude(r'test_resize_tf_crop_and_resize')  # We support above Clip-6
 
