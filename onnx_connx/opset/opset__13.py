@@ -20,6 +20,7 @@ attrset = {
                _string('mode', 'nearest'),
                _string('nearest_mode', 'round_prefer_floor')],
     'Sigmoid': [],
+    'Sign': [],
     'Slice': [],
     'Split': [_int('axis', 0)],
     'Squeeze': [],
