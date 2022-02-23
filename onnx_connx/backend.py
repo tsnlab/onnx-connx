@@ -17,7 +17,15 @@ from .compiler import compile_from_model
 from .opset import get_attrset
 
 
-_CONNX_PATHS = ['onnx_connx/connx', './connx', 'connx']
+_CONNX_PATHS = [
+    os.path.join(
+        os.path.dirname(__file__),
+        'connx'
+    ),
+    'onnx_connx/connx',
+    './connx',
+    'connx'
+]
 
 
 class Backend(object):
@@ -61,8 +69,7 @@ class Backend(object):
             if shutil.which(path) is not None:
                 connx_path = path
                 break
-
-        if connx_path is None:
+        else:
             raise Exception(f'Cannot find connx in paths: {_CONNX_PATHS}')
 
         if 'out' in kwargs:
@@ -142,14 +149,14 @@ def main(args):
     backend = Backend.prepare(model, *kwargs)
     outputs = backend.run(inputs)
 
-    if type(outputs) == tuple:
+    if isinstance(outputs, tuple):
         for output in outputs:
             print(output)
     else:
         print(outputs)
 
 
-if __name__ == '__main__':
+def run():
     parser = argparse.ArgumentParser(description='CONNX Backend')
     parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
     parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
@@ -164,3 +171,7 @@ if __name__ == '__main__':
         cProfile.run('main(args)')
     else:
         main(args)
+
+
+if __name__ == '__main__':
+    run()
