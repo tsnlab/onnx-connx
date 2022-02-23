@@ -14,16 +14,3 @@ jobs:
       run: sudo apt-get install flake8
     - name: Check python lint
       run: flake8
-
-  build_and_test:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-    - name: Install ubuntu packages to build
-      run: |
-          sudo apt-get install python3 python3-pip
-          pip3 install tabulate protobuf==3.17.3 onnx==1.9.0 pytest-parallel
-    - name: ONNX Test Cases
-      run: |
-          make test

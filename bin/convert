@@ -16,11 +16,11 @@ process_testdata() {
     CONNX_TC_PATH=$3
     mkdir -p $CONNX_TC_PATH/$BASE
 
-    find $ONNX_TC_PATH/$BASE -name "*.pb" -exec python -m onnx_connx {} -o $CONNX_TC_PATH/$BASE \;
+    find $ONNX_TC_PATH/$BASE -name "*.pb" -exec python -m onnx_connx {} $CONNX_TC_PATH/$BASE \;
 }
 
 export -f process_testdata
 
 # Convert onnx model to connx model
-python -m onnx_connx $ONNX_TC_PATH/model.onnx -o $CONNX_TC_PATH
+python -m onnx_connx $ONNX_TC_PATH/model.onnx $CONNX_TC_PATH
 find $ONNX_TC_PATH -name 'test_data_set_*' -exec bash -c 'process_testdata "$@"' bash {} $ONNX_TC_PATH $CONNX_TC_PATH \;

@@ -27,11 +27,6 @@ $ sudo apt install python3 python3-pip
 $ poetry install
 ```
 
-## Debug installation
-```sh
-pip install -e git+file:///[path-to-onnx-connx]
-```
-
 ## Dump onnx to text
 2 ways to dump onnx or pb file to text.
 
