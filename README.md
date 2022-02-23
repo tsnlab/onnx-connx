@@ -7,7 +7,7 @@ onnx-connx is a tool
 # For users
 ## Install onnx-connx via pip
 ```sh
-pip install git+https://github.com/semihlab/onnx-connx
+pip install git+https://github.com/tsnlab/onnx-connx
 ```
 
 ## Convert ONNX to CONNX model
@@ -64,7 +64,20 @@ onnx-connx$ bin/test [onnx version]
 |   1.11.0   |       100%      |
 
 # Run connx backend
-# Run backend
+## Install connx manually
+If you just cloned onnx-connx, you need to compile connx.
+```sh
+onnx-connx$ git submoudle init
+onnx-connx$ git submoudle update
+onnx-connx$ pip install jinja2
+onnx-connx$ python3 build_connx.py
+```
+Or you can copy connx binary to onnx\_connx directory.
+```
+onnx-connx$ cp $CONNX_BUILD_PATH/connx onnx_connx/
+```
+
+## Run backend
 connx backend will compile the ONNX to CONNX and run it using connx.
 connx binary must in onnx\_connx, current directory or in PATH environment variable.
 

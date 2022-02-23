@@ -5,8 +5,8 @@ description = "ONNX to CONNX converting tool"
 authors = ["Semih Kim <semih.kim@gmail.com>"]
 license = "GPL-3.0-only"
 readme = "README.md"
-homepage = "https://github.com/semihlab/onnx-connx"
-repository = "https://github.com/semihlab/onnx-connx"
+homepage = "https://github.com/tsnlab/onnx-connx"
+repository = "https://github.com/tsnlab/onnx-connx"
 classifiers = [
   "Environment :: Console",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -18,7 +18,7 @@ include = [
 ]
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/semihlab/onnx-connx/issues"
+"Bug Tracker" = "https://github.com/tsnlab/onnx-connx/issues"
 
 [tool.poetry.dependencies]
 python = "^3.8"
