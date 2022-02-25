@@ -8,6 +8,10 @@ from onnx import numpy_helper
 
 from .opset import get_attrset
 
+COMMENT_EXCLUDES = {
+    '_ref',
+}
+
 
 class ConnxObject:
     def __init__(self, proto=None, parent=None):
@@ -800,7 +804,8 @@ class ConnxNodeProto(ConnxObject):
             out.write(' ')
             attribute.compile(out)
 
-        if self.get_root().get_config('comment'):
+        if (self.get_root().get_config('comment')
+                and self.proto.name not in COMMENT_EXCLUDES):
             out.write(' # ')
             out.write(str(len(self.proto.name)))
             out.write(' ')
