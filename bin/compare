@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-import numpy as np
 import os
 import pathlib
+import re
 import sys
 from glob import glob
 
-from onnx import helper
+import numpy as np
 
 # import onnx_connx
 file_path = os.path.dirname(__file__)
@@ -20,6 +20,7 @@ from onnx_connx import read_data, read_npy  # noqa: E402
 parser = argparse.ArgumentParser(description='Compare .data files and .npy files')
 parser.add_argument('data_dir', type=pathlib.Path, help='.data log dir')
 parser.add_argument('npy_dir', type=pathlib.Path, help='.npy log dir')
+parser.add_argument('text_file', type=pathlib.Path, nargs='?', help='0.text for sort')
 parser.add_argument('--threshold', nargs='?', default=1e-4, type=float, help='tolerance of MSE, default: 1e-4')
 parser.add_argument('--width', nargs='?', default=160, type=int, help='max print column width')
 parser.add_argument('-v', action='store_true', help='verbose')
@@ -33,6 +34,7 @@ RED = '\033[91m'
 GREEN = '\033[92m'
 END = '\033[0m'
 
+
 def shape_equals(shape1, shape2):
     if len(shape1) != len(shape1):
         return False
@@ -44,16 +46,48 @@ def shape_equals(shape1, shape2):
     return True
 
 
+def get_name(fname):
+    return os.path.splitext(os.path.basename(fname))[0]
+
+
 np.set_printoptions(suppress=False, threshold=sys.maxsize, linewidth=args.width)
 
-max_name = 0
-for data_file in data_files:
-    name = os.path.basename(data_file)[:-5]
-    if len(name) > max_name:
-        max_name = len(name)
+max_name_len = max(len(get_name(data_file)) for data_file in data_files)
 
-for data_file in data_files:
-    name = os.path.basename(data_file)[:-5]
+output_names = []
+
+if args.text_file:
+    output_names = []
+
+    with open(args.text_file) as f:
+        lines = f.readlines()
+
+    for line in lines:
+        if '#' not in line:
+            continue
+
+        output_count = int(re.match(r'^\S+ (\d+)', line).group(1))
+        names = re.findall(r'\S+:\d+', line)[:output_count]
+
+        for name in names:
+            output_names.append(name.replace('/', '_'))
+
+
+def index_function(fname):
+    name = get_name(fname)
+    try:
+        real_name = re.sub(r'_\d+$', '', name)
+        index = output_names.index(real_name)
+    except ValueError:
+        index = -1
+
+    return index
+
+
+data_files.sort(key=index_function)
+
+for data_file in sorted(data_files, key=index_function):
+    name = os.path.splitext(os.path.basename(data_file))[0]
     npy_file = os.path.join(args.npy_dir, name + '.npy')
 
     if npy_file in npy_files:
@@ -62,7 +96,9 @@ for data_file in data_files:
                 data = read_data(data_in)
                 npy = read_npy(npy_in)
 
-                title = f'{name} {" " * (max_name - len(name))}'
+                index = index_function(data_file)
+
+                title = f'{name:<{max_name_len}}'
                 if not shape_equals(data.shape, npy.shape):
                     print(f'{title} {RED}shape mismatch:{END} {data.shape} != {npy.shape}')
                     continue
@@ -70,9 +106,9 @@ for data_file in data_files:
                 diff = np.sqrt(((data - npy)**2).sum()) / data.size
 
                 if diff < args.threshold:
-                    print(f'{title} {diff} {GREEN}PASS{END}')
+                    print(f'{title} {diff:.12f} {GREEN}PASS{END}')
                 else:
-                    print(f'{title} {diff} {RED}FAIL{END}')
+                    print(f'{title} {diff:.12f} {RED}FAIL{END}')
 
                     if args.v:
                         print('data')
