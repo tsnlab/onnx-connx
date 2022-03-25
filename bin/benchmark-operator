@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -eo pipefail
+
+PROJECT_PATH="$(dirname "$(dirname "$(readlink -f "$0")")")"
+
+CONNX_RUNTIME=${CONNX_RUNTIME:-$PROJECT_PATH/onnx_connx/connx}
+TEST_COUNT=${TEST_COUNT:-1000}
+RESULTS_DIR=${RESULTS_DIR:-results}
+TESTS_DIR=$(mktemp -d)
+trap 'rm -rf $TESTS_DIR' EXIT
+
+onnx_path() {
+    python -c 'import os; import onnx; print(os.path.dirname(onnx.__file__))'
+}
+
+make_tests() {
+    local test_pattern="$1"
+
+    # Convert tests
+    find "$(onnx_path)/backend/test/data/node" -maxdepth 1 -type d -name "test_${test_pattern}*" | while read -r test_dir; do
+    test_name=$(basename "$test_dir")
+    echo "Converting $test_name"
+    "$PROJECT_PATH/bin/convert" "$test_dir" "$TESTS_DIR/$test_name" || true
+    done
+}
+
+
+run_tests() {
+    for dir in "$TESTS_DIR"/test_*; do
+        echo "Running tests $dir"
+        find "$dir" -maxdepth 1 -type d -name 'test_data_set_*' | while read -r test_data_set; do
+            echo "Running tests with $test_data_set"
+            logfile="${RESULTS_DIR}/$(basename "$dir")_$(basename "$test_data_set").log"
+            $CONNX_RUNTIME "$dir" "$test_data_set"/input_*.data -p "$TEST_COUNT" > "$logfile"
+        done
+    done
+}
+
+# Check argument count is 1
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <test_pattern>"
+    exit 1
+fi
+
+mkdir -p "$RESULTS_DIR"
+mkdir -p "$TESTS_DIR"
+
+make_tests "$1"
+run_tests
