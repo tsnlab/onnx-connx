@@ -18,11 +18,15 @@ make_tests() {
     local test_pattern="$1"
 
     # Convert tests
-    find "$(onnx_path)/backend/test/data/node" -maxdepth 1 -type d -name "test_${test_pattern}*" | while read -r test_dir; do
-    test_name=$(basename "$test_dir")
-    echo "Converting $test_name"
-    "$PROJECT_PATH/bin/convert" "$test_dir" "$TESTS_DIR/$test_name" || true
+    find "$(onnx_path)/backend/test/data/node" -maxdepth 1 -type d \( -name "test_${test_pattern}" -or -name "test_${test_pattern}_*" \) | while read -r test_dir; do
+        test_name=$(basename "$test_dir")
+        echo "Converting $test_name"
+        "$PROJECT_PATH/bin/convert" "$test_dir" "$TESTS_DIR/$test_name" || true
+
+        # Copy onnx
+        # rsync -srtulHv "${test_dir}/" "$TESTS_DIR/$test_name/"
     done
+
 }
 
 
