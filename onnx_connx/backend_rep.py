@@ -26,7 +26,6 @@ class BackendRep(object):
             args.append('-p')
             args.append(str(self._loop_count))
 
-        print('args', args)
         with subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE) as proc:
             # Write number of inputs
             proc.stdin.write(struct.pack('=I', len(inputs)))
