@@ -1,5 +1,4 @@
 import argparse
-import cProfile
 import os
 import random
 import shutil
@@ -77,11 +76,11 @@ class Backend(object):
             os.makedirs(path, exist_ok=True)
 
             compile_from_model(model, model_path)
-            return BackendRep(connx_path, model_path)
+            return BackendRep(connx_path, model_path, **kwargs)
         else:
             model_path = os.path.join(tempfile.gettempdir(), f'connx.{time.time() + random.random()}')
             compile_from_model(model, model_path)
-            return BackendRep(connx_path, model_path, delete_path=True)
+            return BackendRep(connx_path, model_path, delete_path=True, **kwargs)
 
     @classmethod
     def run_model(cls,
@@ -130,7 +129,6 @@ class Backend(object):
 def main(args):
     onnx_path = args.onnx[0]
     input_paths = args.pb
-    output_dir = args.o
 
     model = onnx.load_model(onnx_path)
     inputs = []
@@ -143,10 +141,14 @@ def main(args):
             inputs.append(numpy_helper.to_array(tensor))
 
     kwargs = {}
-    if output_dir is not None:
-        kwargs['out'] = output_dir
 
-    backend = Backend.prepare(model, *kwargs)
+    if args.o is not None:
+        kwargs['out'] = args.o
+
+    if args.p is not None:
+        kwargs['loop_count'] = args.p
+
+    backend = Backend.prepare(model, **kwargs)
     outputs = backend.run(inputs)
 
     if isinstance(outputs, tuple):
@@ -162,15 +164,12 @@ def run():
     parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
     parser.add_argument('-o', metavar='output directory', type=str, nargs='?',
                         help='connx output directory(default is temporary directory)')
-    parser.add_argument('-p', action='store_true', help='performance profiling')
+    parser.add_argument('-p', metavar='loop count', nargs='?', type=int,
+                        help='Pass performance test option to connx')
 
     args = parser.parse_args()
 
-    if args.p:
-        print('Performance profiling...')
-        cProfile.run('main(args)')
-    else:
-        main(args)
+    main(args)
 
 
 if __name__ == '__main__':
