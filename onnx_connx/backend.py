@@ -142,11 +142,11 @@ def main(args):
 
     kwargs = {}
 
-    if args.o is not None:
-        kwargs['out'] = args.o
+    if args.output is not None:
+        kwargs['out'] = args.output
 
-    if args.p is not None:
-        kwargs['loop_count'] = args.p
+    if args.performance is not None:
+        kwargs['loop_count'] = args.performance
 
     backend = Backend.prepare(model, **kwargs)
     outputs = backend.run(inputs)
