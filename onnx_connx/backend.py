@@ -162,9 +162,9 @@ def run():
     parser = argparse.ArgumentParser(description='CONNX Backend')
     parser.add_argument('onnx', metavar='onnx', nargs=1, help='an input ONNX model file')
     parser.add_argument('pb', metavar='pb', nargs='*', help='tensor pb files')
-    parser.add_argument('-o', metavar='output directory', type=str, nargs='?',
+    parser.add_argument('-o', '--output', metavar='output directory', type=str, nargs='?',
                         help='connx output directory(default is temporary directory)')
-    parser.add_argument('-p', metavar='loop count', nargs='?', type=int,
+    parser.add_argument('-p', '--performance', metavar='loop count', nargs='?', type=int,
                         help='Pass performance test option to connx')
 
     args = parser.parse_args()
