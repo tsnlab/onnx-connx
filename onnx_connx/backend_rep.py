@@ -9,7 +9,7 @@ from . import read_data, write_data
 
 
 class BackendRep(object):
-    def __init__(self, connx_path, model_path, loop_count=0, delete_path=False):
+    def __init__(self, connx_path, model_path, loop_count=None, delete_path=False):
         self.connx_path = connx_path
         self.model_path = model_path
         self._loop_count = loop_count
@@ -22,7 +22,7 @@ class BackendRep(object):
     def run(self, inputs, **kwargs):  # type: (Any, **Any) -> Tuple[Any, ...]
         args = [self.connx_path, self.model_path]
 
-        if self._loop_count > 0:
+        if self._loop_count is not None:
             args.append('-p')
             args.append(str(self._loop_count))
 
