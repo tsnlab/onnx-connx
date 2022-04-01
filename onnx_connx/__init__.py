@@ -119,7 +119,7 @@ def product(shape):
     return p
 
 
-def read_pb(input_: io.RawIOBase) -> Union[onnx.TensorProto, onnx.SequenceProto, onnx.MapProto, onnx.OptionalProto]:
+def read_pb(input_: io.RawIOBase):
     buf = input_.read()
     if buf[0] == 0x08:  # TensorProto
         tensor = onnx.TensorProto()
