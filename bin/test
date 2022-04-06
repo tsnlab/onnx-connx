@@ -22,11 +22,7 @@ else
     echo "VIRTUAL_ENV is not empty, use existing one"
 fi
 
-pip install --upgrade pip pytest tabulate
-if [ "$ONNX_VERSION" = "latest" ]; then
-    pip install -U onnx
-else
-    pip install -U onnx=="${ONNX_VERSION}"
-fi
+[[ "$ONNX_VERSION" = "latest" ]] && ONNX_VERSION='' || ONNX_VERSION="==${ONNX_VERSION}"
+pip install --upgrade pip pytest tabulate "onnx${ONNX_VERSION}"
 
 exec pytest "$@"
