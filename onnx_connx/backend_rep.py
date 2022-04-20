@@ -1,5 +1,5 @@
 import shutil
-from typing import Any, List, Tuple
+from typing import List, Tuple, Union
 
 import connx
 import numpy as np
@@ -27,12 +27,13 @@ class BackendRep(object):
         else:
             raise Exception(f'Unknown input type: {type(input_)}')
 
-    def run(self, inputs):  # type: (Any, **Any) -> Tuple[Any, ...]
-        if self._loop_count is not None:
-            # TODO: support benchmark
-            raise NotImplementedError
+    def run(self, inputs) -> Union[Tuple[np.ndarray], float]:
 
         inputs = [self.convert_input(input_) for input_ in inputs]
         model = connx.load_model(self.model_path)
+
+        if self._loop_count is not None:
+            return model.benchmark(inputs, self._loop_count, aggregate=True)
+
         outputs: List[connx.Tensor] = model.run(inputs)
         return [output.to_nparray() for output in outputs]
