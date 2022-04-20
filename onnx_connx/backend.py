@@ -1,7 +1,6 @@
 import argparse
 import os
 import random
-import shutil
 import tempfile
 import time
 from typing import Any, Dict, Optional, Sequence, Text, Tuple

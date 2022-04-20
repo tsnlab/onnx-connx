@@ -1,13 +1,8 @@
 import shutil
-import struct
-import subprocess
 from typing import Any, List, Tuple
 
-import numpy as np
-
 import connx
-
-from . import read_data, write_data
+import numpy as np
 
 
 class BackendRep(object):
