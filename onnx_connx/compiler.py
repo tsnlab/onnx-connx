@@ -111,7 +111,7 @@ def print_optional(data, depth):
             print('None')
 
 
-def compile(*_args: str) -> int:
+def run(*_args: str) -> int:
     parser = argparse.ArgumentParser(description='ONNX-CONNX Command Line Interface')
     parser.add_argument('onnx', metavar='onnx model file', nargs=1, help='an input ONNX model file or tensor pb file')
     parser.add_argument('out', metavar='output directory', nargs='?', type=str, default='out',

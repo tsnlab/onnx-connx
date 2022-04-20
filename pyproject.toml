@@ -40,7 +40,7 @@ requires = [
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-onnx2connx = 'onnx_connx.compiler:compile'
+onnx2connx = 'onnx_connx.compiler:run'
 connx-run = 'onnx_connx.backend:run'
 
 [tool.poetry.build]
