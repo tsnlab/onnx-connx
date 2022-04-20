@@ -19,7 +19,6 @@ class BackendRep(object):
         if isinstance(input_, connx.Tensor):
             return input_
         elif isinstance(input_, np.ndarray):
-            print(f'from ndarray {input_.dtype}')
             return connx.Tensor.from_nparray(input_)
         if type(input_) == str:
             # Assume it is a numpy file
