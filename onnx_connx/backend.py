@@ -16,17 +16,6 @@ from .compiler import compile_from_model
 from .opset import get_attrset
 
 
-_CONNX_PATHS = [
-    os.path.join(
-        os.path.dirname(__file__),
-        'connx'
-    ),
-    'onnx_connx/connx',
-    './connx',
-    'connx'
-]
-
-
 class Backend(object):
     @classmethod
     def is_compatible(cls,
@@ -51,10 +40,10 @@ class Backend(object):
 
     @classmethod
     def prepare(cls,
-                model,  # type: ModelProto
-                device='CPU',  # type: Text
-                **kwargs  # type: Any
-                ):  # type: (...) -> Optional[BackendRep]
+                model: ModelProto,
+                device: str = 'CPU',
+                **kwargs
+                ) -> BackendRep:
         onnx.checker.check_model(model)
 
         if len(model.opset_import) == 0:
@@ -63,24 +52,16 @@ class Backend(object):
             opset_id.version = 1
             model.opset_import.append(opset_id)
 
-        # find connx
-        for path in _CONNX_PATHS:
-            if shutil.which(path) is not None:
-                connx_path = path
-                break
-        else:
-            raise Exception(f'Cannot find connx in paths: {_CONNX_PATHS}')
-
         if 'out' in kwargs:
             model_path = kwargs['out']
-            os.makedirs(path, exist_ok=True)
+            os.makedirs(model_path, exist_ok=True)
 
             compile_from_model(model, model_path)
-            return BackendRep(connx_path, model_path, **kwargs)
+            return BackendRep(model_path, **kwargs)
         else:
             model_path = os.path.join(tempfile.gettempdir(), f'connx.{time.time() + random.random()}')
             compile_from_model(model, model_path)
-            return BackendRep(connx_path, model_path, delete_path=True, **kwargs)
+            return BackendRep(model_path, delete_path=True, **kwargs)
 
     @classmethod
     def run_model(cls,
