@@ -17,4 +17,4 @@ jobs:
     - name: ONNX Test Cases
       run: |
           poetry install
-          poetry run pytest
+          poetry run pytest -v
