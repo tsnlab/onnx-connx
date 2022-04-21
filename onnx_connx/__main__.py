@@ -1,5 +1,5 @@
-from .compiler import compile
+from .compiler import run
 
 
 if __name__ == '__main__':
-    compile()
+    run()

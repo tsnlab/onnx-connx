@@ -10,8 +10,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@master
-      with:
-        submodules: true
     - name: Install ubuntu packages to build
       run: |
           sudo apt-get install python3 python3-pip build-essential cmake ninja-build
@@ -19,4 +17,4 @@ jobs:
     - name: ONNX Test Cases
       run: |
           poetry install
-          poetry run pytest
+          poetry run pytest -v

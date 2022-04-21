@@ -64,10 +64,10 @@ class ConnxModelProto(ConnxObject):
         return self.config[name]
 
     def alloc_graph_id(self):
-        id = self.next_graph_id
+        id_ = self.next_graph_id
         self.next_graph_id += 1
 
-        return id
+        return id_
 
     def dump(self, depth=0):
         out = sys.stdout
@@ -179,14 +179,14 @@ class ConnxGraphProto(ConnxObject):
                 self.value_info.append(value_info)
 
         # Make value_info reflects to input
-        for input in proto.input:
-            if input.name == '':
+        for input_ in proto.input:
+            if input_.name == '':
                 continue
 
-            value_info = self.get_value_info(input.name)
+            value_info = self.get_value_info(input_.name)
 
             if value_info is None:
-                value_info = ConnxValueInfoProto(input, self)
+                value_info = ConnxValueInfoProto(input_, self)
                 self.value_info.append(value_info)
 
             self.input.append(value_info)
@@ -217,22 +217,22 @@ class ConnxGraphProto(ConnxObject):
                     self.value_info.append(value_info)
 
         # Assign ID to value_info, which has intializer and sparse_initializer first
-        id = 1
+        id_ = 1
         for value_info in self.value_info:
             if value_info.initializer is not None:
-                value_info.id = id
-                value_info.initializer.id = id
-                id += 1
+                value_info.id = id_
+                value_info.initializer.id = id_
+                id_ += 1
             elif value_info.sparse_initializer is not None:
-                value_info.id = id
-                value_info.sparse_initializer.id = id
-                id += 1
+                value_info.id = id_
+                value_info.sparse_initializer.id = id_
+                id_ += 1
 
         # Assign ID to value_info, which doesn't have intializer and sparse_initializer next
         for value_info in self.value_info:
             if value_info.initializer is None and value_info.sparse_initializer is None:
-                value_info.id = id
-                id += 1
+                value_info.id = id_
+                id_ += 1
 
         self.node = [ConnxNodeProto(proto, self) for proto in proto.node]
 
@@ -253,11 +253,11 @@ class ConnxGraphProto(ConnxObject):
                 self.node.insert(idx, node)
                 idx += 1
 
-        for input in self.input:
+        for input_ in self.input:
             idx = 0
-            ref_count = self.get_ref_count(input.proto.name)
+            ref_count = self.get_ref_count(input_.proto.name)
             if ref_count > 1:
-                node = self.make_ref_count(input.proto.name, input.id, ref_count)
+                node = self.make_ref_count(input_.proto.name, input_.id, ref_count)
                 self.node.insert(idx, node)
                 idx += 1
 
@@ -314,8 +314,8 @@ class ConnxGraphProto(ConnxObject):
         self._tab(out, depth + 1)
         out.write(f'input: {len(self.input)}\n')
 
-        for input in self.input:
-            input.dump(depth + 2)
+        for input_ in self.input:
+            input_.dump(depth + 2)
 
         self._tab(out, depth + 1)
         out.write(f'output: {len(self.output)}\n')
@@ -345,7 +345,7 @@ class ConnxGraphProto(ConnxObject):
 
         return count
 
-    def make_ref_count(self, name, id, ref_count):
+    def make_ref_count(self, name, id_, ref_count):
         attr = onnx.AttributeProto()
         attr.name = 'ref_count'
         attr.type = onnx.AttributeProto.AttributeType.INT
@@ -643,62 +643,62 @@ class ConnxAttributeProto(ConnxObject):
             raise 'Not implemented yet: AttributeType ' + str(self.proto.type)
 
     def value(self):
-        type = self.proto.type
+        type_ = self.proto.type
 
-        if type == 1:
+        if type_ == 1:
             return self.proto.f
-        elif type == 2:
+        elif type_ == 2:
             return self.proto.i
-        elif type == 3:
+        elif type_ == 3:
             return self.proto.s
-        elif type == 4:
+        elif type_ == 4:
             # TODO: Proto를 동적으로 만들면 안되고, value_info에 초기에 초기화 한 후 id를 할당 받아야 함. 그리고 실제 활용할 때는 id로 접근해야 함
             return ConnxTensorProto(self.proto.t, None)
-        elif type == 5:
+        elif type_ == 5:
             # TODO: graph의 경우 id 또는 name으로 접근해야 함
             # value에선 당연히 숫자 또는 문자를 넘겨야 함
             return ConnxGraphProto(self.proto.g, None)
-        elif type == 11:
+        elif type_ == 11:
             return ConnxSparseTensorProto(self.proto.sparse_tensor, None)
-        elif type == 6:
+        elif type_ == 6:
             return self.proto.floats
-        elif type == 7:
+        elif type_ == 7:
             return self.proto.ints
-        elif type == 8:
+        elif type_ == 8:
             return self.proto.strings
-        elif type == 9:
+        elif type_ == 9:
             return [ConnxTensorProto(self.proto.tensors[i]) for i in range(len(self.proto.tensors))]
-        elif type == 10:
+        elif type_ == 10:
             return [ConnxGraphProto(self.proto.graphs[i]) for i in range(len(self.proto.graphs))]
-        elif type == 12:
+        elif type_ == 12:
             return [ConnxSparseTensorProto(self.proto.sparse_tensors[i]) for i in range(len(self.proto.sparse_tensors))]
         else:
             return None
 
-    def AttributeType(type):
-        if type == 1:
+    def AttributeType(type_):
+        if type_ == 1:
             return 'FLOAT'
-        elif type == 2:
+        elif type_ == 2:
             return 'INT'
-        elif type == 3:
+        elif type_ == 3:
             return 'STRING'
-        elif type == 4:
+        elif type_ == 4:
             return 'TENSOR'
-        elif type == 5:
+        elif type_ == 5:
             return 'GRAPH'
-        elif type == 11:
+        elif type_ == 11:
             return 'SPARSE_TENSOR'
-        elif type == 6:
+        elif type_ == 6:
             return 'FLOATS'
-        elif type == 7:
+        elif type_ == 7:
             return 'INTS'
-        elif type == 8:
+        elif type_ == 8:
             return 'STRINGS'
-        elif type == 9:
+        elif type_ == 9:
             return 'TENSORS'
-        elif type == 10:
+        elif type_ == 10:
             return 'GRAPHS'
-        elif type == 12:
+        elif type_ == 12:
             return 'SPARSE_TENSORS'
         else:
             return 'UNDEFINED'
@@ -804,8 +804,7 @@ class ConnxNodeProto(ConnxObject):
             out.write(' ')
             attribute.compile(out)
 
-        if (self.get_root().get_config('comment')
-                and self.proto.name not in COMMENT_EXCLUDES):
+        if (self.get_root().get_config('comment') and self.proto.name not in COMMENT_EXCLUDES):
             out.write(' # ')
             out.write(str(len(self.proto.name)))
             out.write(' ')
