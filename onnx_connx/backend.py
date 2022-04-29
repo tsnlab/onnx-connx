@@ -3,7 +3,8 @@ import os
 import random
 import tempfile
 import time
-from typing import Any, Dict, Optional, Sequence, Text, Tuple
+import statistics
+from typing import Any, Dict, List, Optional, Sequence, Text, Tuple
 
 import numpy
 import onnx.checker
@@ -131,7 +132,19 @@ def main(args):
     backend = Backend.prepare(model, **kwargs)
     outputs = backend.run(inputs)
 
-    if isinstance(outputs, tuple):
+    if args.performance:
+        outputs: List[float]
+        minimum = min(outputs)
+        maximum = max(outputs)
+        mean = statistics.mean(outputs)
+        total = sum(outputs)
+
+        print(f'minimum: {minimum * (10 ** 9):12,.0f}')
+        print(f'mean:    {mean * (10 ** 9):12,.0f}')
+        print(f'maximum: {maximum * (10 ** 9):12,.0f}')
+        print(f'total:   {total * (10 ** 9):12,.0f}')
+
+    elif isinstance(outputs, tuple):
         for output in outputs:
             print(output)
     else:
