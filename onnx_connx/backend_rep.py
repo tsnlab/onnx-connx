@@ -27,13 +27,13 @@ class BackendRep(object):
         else:
             raise Exception(f'Unknown input type: {type(input_)}')
 
-    def run(self, inputs) -> Union[Tuple[np.ndarray], float]:
+    def run(self, inputs) -> Union[Tuple[np.ndarray], List[float]]:
 
         inputs = [self.convert_input(input_) for input_ in inputs]
         model = connx.load_model(self.model_path)
 
         if self._loop_count is not None:
-            return model.benchmark(inputs, self._loop_count, aggregate=True)
+            return model.benchmark(inputs, self._loop_count, aggregate=False)
 
         outputs: List[connx.Tensor] = model.run(inputs)
         return [output.to_nparray() for output in outputs]
