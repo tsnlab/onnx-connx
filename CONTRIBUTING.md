@@ -46,7 +46,7 @@ onnx-connx$ bin/lint
  3. Register lint to git commit hook (optional)
 
 ```sh
-$ cp bin/lint .git/hooks/pre-commit                # Register Python lint
+$ ln -sf bin/lint .git/hooks/pre-commit                # Register Python lint
 ```
 
  4. If it's your first pull request, github will require to agree CLA, please agree it.

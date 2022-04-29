@@ -86,18 +86,18 @@ bin/benchmark-operator xor
 
 ### Install connx manually
 
-If you just cloned onnx-connx, you need to compile connx.
+If you want to use specific version of [connx][], You need to install it separately.
+
+[connx]: https://github.com/tsnlab/connx
 
 ```sh
-onnx-connx$ git submoudle init
-onnx-connx$ git submoudle update
-onnx-connx$ pip install jinja2
-onnx-connx$ python3 build_connx.py
+onnx-connx$ git clone https://github.com/tsnlab/connx && cd connx
+onnx-connx$ pip install .
 ```
-Or you can copy `connx` binary to `onnx_connx` directory.
+Or you can install connx from git directly using pip.
 
-```
-onnx-connx$ cp $CONNX_BUILD_PATH/connx onnx_connx/
+```sh
+$ pip install git+https://github.com/tsnlab/connx
 ```
 
 ### Run backend
