@@ -1,9 +1,10 @@
 import argparse
 import os
 import random
+import statistics
 import tempfile
 import time
-import statistics
+
 from typing import Any, Dict, List, Optional, Sequence, Text, Tuple
 
 import numpy
