@@ -103,8 +103,24 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_conv_with_autopad_same                        $(CONNX_HOME)/test/data/node/test_conv_with_autopad_same
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_basic_conv_without_padding                    $(CONNX_HOME)/test/data/node/test_basic_conv_without_padding
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_conv_with_strides_and_asymmetric_padding      $(CONNX_HOME)/test/data/node/test_conv_with_strides_and_asymmetric_padding
-	# Identity
+	
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity                                      $(CONNX_HOME)/test/data/node/test_identity
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gather_0 $(CONNX_HOME)/test/data/node/test_gather_0
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_nonzero_example $(CONNX_HOME)/test/data/node/test_nonzero_example
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_greater_equal $(CONNX_HOME)/test/data/node/test_greater_equal
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_greater_equal_bcast $(CONNX_HOME)/test/data/node/test_greater_equal_bcast
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_greater_equal_expanded $(CONNX_HOME)/test/data/node/test_greater_equal_expanded
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_greater_equal_bcast_expanded $(CONNX_HOME)/test/data/node/test_greater_equal_bcast_expanded
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_equal $(CONNX_HOME)/test/data/node/test_equal
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_equal_bcast $(CONNX_HOME)/test/data/node/test_equal_bcast
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or2d $(CONNX_HOME)/test/data/node/test_or2d
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or3d $(CONNX_HOME)/test/data/node/test_or3d
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or4d $(CONNX_HOME)/test/data/node/test_or4d
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or_bcast3v1d $(CONNX_HOME)/test/data/node/test_or_bcast3v1d
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or_bcast3v2d $(CONNX_HOME)/test/data/node/test_or_bcast3v2d
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or_bcast4v2d $(CONNX_HOME)/test/data/node/test_or_bcast4v2d
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or_bcast4v3d $(CONNX_HOME)/test/data/node/test_or_bcast4v3d
+	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or_bcast4v4d $(CONNX_HOME)/test/data/node/test_or_bcast4v4d
 	# seq is not supported yest
 	#bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity_sequence                             $(CONNX_HOME)/test/data/node/test_identity_sequence
 
