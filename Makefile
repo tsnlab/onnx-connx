@@ -123,4 +123,27 @@ convert-test: # Convert onnx test case to connx
 	bin/convert  $(ONNX_HOME)/backend/test/data/node/test_or_bcast4v4d $(CONNX_HOME)/test/data/node/test_or_bcast4v4d
 	# seq is not supported yest
 	#bin/convert $(ONNX_HOME)/backend/test/data/node/test_identity_sequence                             $(CONNX_HOME)/test/data/node/test_identity_sequence
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_scales_cubic/ $(CONNX_HOME)/test/data/node/test_resize_downsample_scales_cubic/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_scales_cubic_align_corners/ $(CONNX_HOME)/test/data/node/test_resize_downsample_scales_cubic_align_corners/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_scales_cubic_A_n0p5_exclude_outside/ $(CONNX_HOME)/test/data/node/test_resize_downsample_scales_cubic_A_n0p5_exclude_outside/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_scales_linear/ $(CONNX_HOME)/test/data/node/test_resize_downsample_scales_linear/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_scales_linear_align_corners/ $(CONNX_HOME)/test/data/node/test_resize_downsample_scales_linear_align_corners/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_scales_nearest/ $(CONNX_HOME)/test/data/node/test_resize_downsample_scales_nearest/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_cubic/ $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_cubic/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_linear_pytorch_half_pixel/ $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_linear_pytorch_half_pixel/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_nearest/ $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_nearest/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn/ $(CONNX_HOME)/test/data/node/test_resize_downsample_sizes_nearest_tf_half_pixel_for_nn/
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_tf_crop_and_resize/ $(CONNX_HOME)/test/data/node/test_resize_tf_crop_and_resize/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_cubic/ $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_cubic/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_cubic_align_corners/ $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_cubic_align_corners/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_cubic_A_n0p5_exclude_outside/ $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_cubic_A_n0p5_exclude_outside/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_cubic_asymmetric/ $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_cubic_asymmetric/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_linear/ $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_linear/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_linear_align_corners/ $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_linear_align_corners/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_scales_nearest/ $(CONNX_HOME)/test/data/node/test_resize_upsample_scales_nearest/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_cubic/ $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_cubic/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest/ $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_ceil_half_pixel/ $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_ceil_half_pixel/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_floor_align_corners/ $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_floor_align_corners/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_round_prefer_ceil_asymmetric/ $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_round_prefer_ceil_asymmetric/
 
