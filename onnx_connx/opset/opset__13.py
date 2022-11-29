@@ -24,7 +24,6 @@ attrset = {
     'Slice': [],
     'Split': [_int('axis', 0)],
     'Squeeze': [],
-    'Tanh': [],
     'Tile': [],
     'Transpose': [_ints('perm', [])],
 }
