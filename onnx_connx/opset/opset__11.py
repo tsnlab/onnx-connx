@@ -11,4 +11,5 @@ attrset = {
                _float('extrapolation_value', 0.0),
                _string('mode', 'nearest'),
                _string('nearest_mode', 'round_prefer_floor')],
+    'Round': [],
 }

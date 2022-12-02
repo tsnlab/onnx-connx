@@ -6,4 +6,5 @@ attrset = {
     'NonZero': [],
     'Sign': [],
     'Sinh': [],
+    'Where': [],
 }
