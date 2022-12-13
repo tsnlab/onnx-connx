@@ -146,4 +146,21 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_ceil_half_pixel/ $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_ceil_half_pixel/
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_floor_align_corners/ $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_floor_align_corners/
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_resize_upsample_sizes_nearest_round_prefer_ceil_asymmetric/ $(CONNX_HOME)/test/data/node/test_resize_upsample_sizes_nearest_round_prefer_ceil_asymmetric/
+	
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_softplus/ $(CONNX_HOME)/test/data/node/test_softplus/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_softplus_example/ $(CONNX_HOME)/test/data/node/test_softplus_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_tile/ $(CONNX_HOME)/test/data/node/test_tile/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_tile_precomputed/ $(CONNX_HOME)/test/data/node/test_tile_precomputed/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_acos/ $(CONNX_HOME)/test/data/node/test_acos/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_acos_example/ $(CONNX_HOME)/test/data/node/test_acos_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_acosh/ $(CONNX_HOME)/test/data/node/test_acosh/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_acosh_example/ $(CONNX_HOME)/test/data/node/test_acosh_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_asinh/ $(CONNX_HOME)/test/data/node/test_asinh/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_asinh_example/ $(CONNX_HOME)/test/data/node/test_asinh_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_atanh/ $(CONNX_HOME)/test/data/node/test_atanh/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_atanh_example/ $(CONNX_HOME)/test/data/node/test_atanh_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_ceil/ $(CONNX_HOME)/test/data/node/test_ceil/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_ceil_example/ $(CONNX_HOME)/test/data/node/test_ceil_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_floor/ $(CONNX_HOME)/test/data/node/test_floor/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_floor_example/ $(CONNX_HOME)/test/data/node/test_floor_example/
 
