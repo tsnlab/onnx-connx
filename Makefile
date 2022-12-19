@@ -163,4 +163,63 @@ convert-test: # Convert onnx test case to connx
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_ceil_example/ $(CONNX_HOME)/test/data/node/test_ceil_example/
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_floor/ $(CONNX_HOME)/test/data/node/test_floor/
 	bin/convert $(ONNX_HOME)/backend/test/data/node/test_floor_example/ $(CONNX_HOME)/test/data/node/test_floor_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_broadcast/ $(CONNX_HOME)/test/data/node/test_mod_broadcast/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_int64_fmod/ $(CONNX_HOME)/test/data/node/test_mod_int64_fmod/
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_mixed_sign_float16/ $(CONNX_HOME)/test/data/node/test_mod_mixed_sign_float16/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_mixed_sign_float32/ $(CONNX_HOME)/test/data/node/test_mod_mixed_sign_float32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_mixed_sign_float64/ $(CONNX_HOME)/test/data/node/test_mod_mixed_sign_float64/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_mixed_sign_int16/ $(CONNX_HOME)/test/data/node/test_mod_mixed_sign_int16/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_mixed_sign_int32/ $(CONNX_HOME)/test/data/node/test_mod_mixed_sign_int32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_mixed_sign_int64/ $(CONNX_HOME)/test/data/node/test_mod_mixed_sign_int64/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_mixed_sign_int8/ $(CONNX_HOME)/test/data/node/test_mod_mixed_sign_int8/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_uint16/ $(CONNX_HOME)/test/data/node/test_mod_uint16/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_uint32/ $(CONNX_HOME)/test/data/node/test_mod_uint32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_uint64/ $(CONNX_HOME)/test/data/node/test_mod_uint64/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_mod_uint8/ $(CONNX_HOME)/test/data/node/test_mod_uint8/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow/ $(CONNX_HOME)/test/data/node/test_pow/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_bcast_array/ $(CONNX_HOME)/test/data/node/test_pow_bcast_array/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_bcast_scalar/ $(CONNX_HOME)/test/data/node/test_pow_bcast_scalar/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_example/ $(CONNX_HOME)/test/data/node/test_pow_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_float/ $(CONNX_HOME)/test/data/node/test_pow_types_float/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_float32_int32/ $(CONNX_HOME)/test/data/node/test_pow_types_float32_int32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_float32_int64/ $(CONNX_HOME)/test/data/node/test_pow_types_float32_int64/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_float32_uint32/ $(CONNX_HOME)/test/data/node/test_pow_types_float32_uint32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_float32_uint64/ $(CONNX_HOME)/test/data/node/test_pow_types_float32_uint64/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_int/ $(CONNX_HOME)/test/data/node/test_pow_types_int/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_int32_float32/ $(CONNX_HOME)/test/data/node/test_pow_types_int32_float32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_int32_int32/ $(CONNX_HOME)/test/data/node/test_pow_types_int32_int32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_int64_float32/ $(CONNX_HOME)/test/data/node/test_pow_types_int64_float32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_pow_types_int64_int64/ $(CONNX_HOME)/test/data/node/test_pow_types_int64_int64/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_neg/ $(CONNX_HOME)/test/data/node/test_neg/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_neg_example/ $(CONNX_HOME)/test/data/node/test_neg_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_size/ $(CONNX_HOME)/test/data/node/test_size/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_size_example/ $(CONNX_HOME)/test/data/node/test_size_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_round/ $(CONNX_HOME)/test/data/node/test_round/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_where_example/ $(CONNX_HOME)/test/data/node/test_where_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_where_long_example/ $(CONNX_HOME)/test/data/node/test_where_long_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_bitshift_left_uint16/ $(CONNX_HOME)/test/data/node/test_bitshift_left_uint16/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_bitshift_left_uint32/ $(CONNX_HOME)/test/data/node/test_bitshift_left_uint32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_bitshift_left_uint64/ $(CONNX_HOME)/test/data/node/test_bitshift_left_uint64/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_bitshift_left_uint8/ $(CONNX_HOME)/test/data/node/test_bitshift_left_uint8/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_bitshift_right_uint16/ $(CONNX_HOME)/test/data/node/test_bitshift_right_uint16/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_bitshift_right_uint32/ $(CONNX_HOME)/test/data/node/test_bitshift_right_uint32/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_bitshift_right_uint64/ $(CONNX_HOME)/test/data/node/test_bitshift_right_uint64/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_bitshift_right_uint8/ $(CONNX_HOME)/test/data/node/test_bitshift_right_uint8/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_celu/ $(CONNX_HOME)/test/data/node/test_celu/
+	# XXX: Constant is not supported yet
+	# bin/convert $(ONNX_HOME)/backend/test/data/node/test_celu_expanded/ $(CONNX_HOME)/test/data/node/test_celu_expanded/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_elu/ $(CONNX_HOME)/test/data/node/test_elu/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_elu_default/ $(CONNX_HOME)/test/data/node/test_elu_default/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_elu_example/ $(CONNX_HOME)/test/data/node/test_elu_example/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_all_attributes/ $(CONNX_HOME)/test/data/node/test_gemm_all_attributes/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_alpha/ $(CONNX_HOME)/test/data/node/test_gemm_alpha/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_beta/ $(CONNX_HOME)/test/data/node/test_gemm_beta/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_default_matrix_bias/ $(CONNX_HOME)/test/data/node/test_gemm_default_matrix_bias/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_default_no_bias/ $(CONNX_HOME)/test/data/node/test_gemm_default_no_bias/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_default_scalar_bias/ $(CONNX_HOME)/test/data/node/test_gemm_default_scalar_bias/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_default_single_elem_vector_bias/ $(CONNX_HOME)/test/data/node/test_gemm_default_single_elem_vector_bias/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_default_vector_bias/ $(CONNX_HOME)/test/data/node/test_gemm_default_vector_bias/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_default_zero_bias/ $(CONNX_HOME)/test/data/node/test_gemm_default_zero_bias/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_transposeA/ $(CONNX_HOME)/test/data/node/test_gemm_transposeA/
+	bin/convert $(ONNX_HOME)/backend/test/data/node/test_gemm_transposeB/ $(CONNX_HOME)/test/data/node/test_gemm_transposeB/
 
