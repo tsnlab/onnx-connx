@@ -22,7 +22,7 @@ onnx = "^1.13.0"
 connx = {git = "https://github.com/tsnlab/connx", rev = "master", extras = ["numpy"]}
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.0.1"
+pytest = "^7.2.0"
 tabulate = "^0.8.9"
 
 [build-system]
