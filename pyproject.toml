@@ -18,7 +18,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-onnx = "^1.9.0"
+onnx = "^1.13.0"
 connx = {git = "https://github.com/tsnlab/connx", rev = "master", extras = ["numpy"]}
 
 [tool.poetry.dev-dependencies]
