@@ -8,6 +8,7 @@ attrset = {
     'Equal': [],
     'Exp': [],
     'Gather': [_int('axis', 0)],
+    'Gemm': [_float('alpha', 1.0), _float('beta', 1.0), _int('transA', 0), _int('transB', 0)],
     'Greater': [],
     'Less': [],
     'Log': [],
@@ -24,7 +25,6 @@ attrset = {
     'Slice': [],
     'Split': [_int('axis', 0)],
     'Squeeze': [],
-    'Tanh': [],
     'Tile': [],
     'Transpose': [_ints('perm', [])],
 }

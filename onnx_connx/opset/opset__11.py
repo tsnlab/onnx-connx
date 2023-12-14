@@ -2,6 +2,7 @@ from .opset import _float, _int, _ints, _string
 
 
 attrset = {
+    'BitShift': [_string('direction', 'LEFT')],
     'Clip': [],
     'Conv': [_string('auto_pad', 'NOTSET'), _ints('dilations', []), _int('group', 1),
              _ints('kernel_shape', []), _ints('pads', []), _ints('strides', [])],
@@ -11,4 +12,5 @@ attrset = {
                _float('extrapolation_value', 0.0),
                _string('mode', 'nearest'),
                _string('nearest_mode', 'round_prefer_floor')],
+    'Round': [],
 }

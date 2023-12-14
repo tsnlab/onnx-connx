@@ -1,7 +1,8 @@
-from .opset import _string
+from .opset import _int, _string
 
 
 attrset = {
-    'Slice': [],
+    'Mod': [_int('fmod', 0)],
     'Resize': [_string('mode', 'nearest')],
+    'Slice': [],
 }

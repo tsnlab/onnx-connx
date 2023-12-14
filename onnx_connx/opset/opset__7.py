@@ -1,6 +1,8 @@
 attrset = {
+    'Acos': [],
     'And': [],
     'Asin': [],
+    'Atan': [],
     'Cos': [],
     'Or': [],
     'Sin': [],
